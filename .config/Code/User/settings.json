@@ -1,0 +1,17 @@
+{
+    "window.zoomLevel": -1.1, // -0.5
+    "editor.rulers": [
+        80, 100, 120
+    ],
+    // Font
+    "editor.fontLigatures": true,
+    "editor.fontFamily": "'Fira Code'",
+    "editor.fontWeight": "400",
+    "editor.fontSize": 18, // 22
+
+    "zenMode.hideTabs": false,
+
+    "rust-client.rlsPath": null,
+
+    "rust.unstable_features": true,
+}
