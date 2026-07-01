@@ -55,6 +55,11 @@ ensure_guarded_block() {
   fi
   [ "$rc" -eq 0 ] || { rm -f "$tmp"; die "guarded-block: awk failed on $target"; }
 
-  cmp -s "$tmp" "$target" || cat "$tmp" > "$target"   # write only if changed
+  if cmp -s "$tmp" "$target"; then
+    echo "  ok: $target (unchanged)"
+  else
+    cat "$tmp" > "$target"
+    echo "  updated: $target"
+  fi
   rm -f "$tmp"
 }

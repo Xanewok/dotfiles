@@ -30,14 +30,15 @@ vim_block='if filereadable(expand("~/.config/xanewok-dotfiles/fragments/vim/vimr
   source ~/.config/xanewok-dotfiles/fragments/vim/vimrc
 endif'
 
-log "adding guarded vim config include"
+log "adding guarded vim + neovim config include"
 ensure_guarded_block "$HOME/.vimrc" "xanewok dotfiles" '"' "$vim_block"
+ensure_guarded_block "$HOME/.config/nvim/init.vim" "xanewok dotfiles" '"' "$vim_block"
 
-# Ghostty does not need to exist for this to be safe. The block is additive.
-if [ -f "$HOME/.config/xanewok-dotfiles/fragments/ghostty/config" ]; then
-  ghostty_block="$(cat "$HOME/.config/xanewok-dotfiles/fragments/ghostty/config")"
+# Ghostty may not be installed; the block is still additive.
+if [ -f "$HOME/.config/xanewok-dotfiles/fragments/ghostty/config.ghostty" ]; then
+  ghostty_block="$(cat "$HOME/.config/xanewok-dotfiles/fragments/ghostty/config.ghostty")"
   log "adding guarded Ghostty config block"
-  ensure_guarded_block "$HOME/.config/ghostty/config" "xanewok dotfiles" "#" "$ghostty_block"
+  ensure_guarded_block "$HOME/.config/ghostty/config.ghostty" "xanewok dotfiles" "#" "$ghostty_block"
 fi
 
 log "config profile complete"

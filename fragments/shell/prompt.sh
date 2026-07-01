@@ -36,9 +36,9 @@ if [ "$XANEWOK_DOTFILES_PROMPT" = "1" ]; then
     fi
   elif [ -n "${BASH_VERSION:-}" ]; then
     if [ "$_dotfiles_color" = 1 ]; then
-      PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[01;33m\]$(__dotfiles_git_ps1 " (%s)")\[\033[00m\]\$ '
+      PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[01;33m\]$(__dotfiles_git_ps1 " (%s)")\[\033[00m\]\$ '
     else
-      PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w$(__dotfiles_git_ps1 " (%s)")\$ '
+      PS1='\u@\h:\w$(__dotfiles_git_ps1 " (%s)")\$ '
     fi
   fi
 

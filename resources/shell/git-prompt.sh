@@ -1,13 +1,7 @@
 # shellcheck shell=sh
-# Provide __dotfiles_git_ps1 for the prompt. Prefer git's own __git_ps1 (richer:
-# dirty/stash/upstream state) when available; fall back to a minimal built-in so
-# a bare machine still gets a branch name.
-#
-# We deliberately do NOT vendor git's git-prompt.sh: sourcing the copy the OS
-# already ships means we trust apt/brew's signed package, not an unverified file
-# committed to this repo — and the system copy tends to be newer than a
-# hand-carried one anyway. Signed system locations are tried first; a manually
-# placed ~/git-prompt.sh is only a last resort.
+# Provide __dotfiles_git_ps1: prefer the OS's own __git_ps1 (from the signed apt/brew
+# package — we don't vendor executable code), else a minimal branch-only fallback.
+# Signed system paths are tried first; a hand-placed ~/git-prompt.sh is a last resort.
 if ! command -v __git_ps1 >/dev/null 2>&1; then
   for _gp in \
     /usr/lib/git-core/git-sh-prompt \

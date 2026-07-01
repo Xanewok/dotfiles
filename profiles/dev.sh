@@ -10,7 +10,6 @@ fi
 
 case "$DOTFILES_OS" in
   macos)
-    "$DOTFILES_ROOT/scripts/bootstrap-package-manager.sh"
     "$DOTFILES_ROOT/scripts/macos-brew.sh" dev
     ;;
   linux)
