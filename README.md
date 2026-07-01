@@ -35,9 +35,16 @@ Profiles are cumulative; no argument means `config`, which is why a bare
 The package lists are `linux/apt.*.txt` and `macos/Brewfile.*`; edit those, not
 the scripts.
 
-On a fresh macOS install, `git` itself requires the Xcode Command Line Tools
-(`xcode-select --install`, needs a GUI session) — that's the one step before the
-clone.
+On a fresh macOS install there is no working `git` until the Xcode Command Line
+Tools are installed — `/usr/bin/git` exists but is a shim that only errors (or
+pops the CLT dialog). Stock `curl` and `tar` are enough to bootstrap:
+
+```sh
+curl -fsSL https://github.com/Xanewok/dotfiles/archive/main.tar.gz | tar xz
+cd dotfiles-main && ./install.sh
+```
+
+Installs are copies, so the extracted directory can be deleted afterwards.
 
 ## How it works
 
