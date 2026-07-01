@@ -1,0 +1,18 @@
+" Dotfiles vim fragment. Loaded additively from ~/.vimrc.
+
+set nocompatible
+set number
+set hidden
+set nowrap
+set ignorecase
+set smartcase
+set incsearch
+set hlsearch
+set wildmenu
+set backspace=indent,eol,start
+set tabstop=2
+set shiftwidth=2
+set expandtab
+set updatetime=300
+syntax on
+filetype plugin indent on

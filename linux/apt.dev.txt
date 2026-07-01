@@ -1,0 +1,14 @@
+git
+gh
+curl
+ca-certificates
+build-essential
+pkg-config
+libssl-dev
+tmux
+vim
+neovim
+ripgrep
+fd-find
+fzf
+jq

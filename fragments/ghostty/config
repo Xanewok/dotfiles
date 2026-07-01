@@ -1,0 +1,5 @@
+# Dotfiles Ghostty fragment. Inserted as a guarded block into ~/.config/ghostty/config.
+font-family = FiraCode Nerd Font Mono
+font-size = 14
+copy-on-select = false
+confirm-close-surface = false

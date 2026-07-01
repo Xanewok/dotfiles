@@ -1,0 +1,14 @@
+[init]
+	defaultBranch = main
+
+[pull]
+	rebase = false
+
+[push]
+	autoSetupRemote = true
+
+[color]
+	ui = auto
+
+[core]
+	editor = vim

@@ -1,0 +1,52 @@
+# Local/private machine state
+local/
+hosts/private/
+secrets/
+*.local
+*.secret
+
+# Env/secrets
+.env
+.env.*
+.envrc
+*.pem
+*.key
+*.p12
+*.mobileprovision
+*.provisionprofile
+
+# SSH / signing keys (frequently extensionless)
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
+*_rsa
+*_dsa
+*_ecdsa
+*_ed25519
+*.ppk
+known_hosts
+
+# Cloud / infra credentials
+.aws/
+credentials
+.kube/
+kubeconfig
+*.kubeconfig
+.netrc
+application_default_credentials.json
+.npmrc
+.pypirc
+
+# Wallets / keystores / keychains
+*.wallet
+wallet.dat
+keystore/
+UTC--*
+*.keychain
+*.keychain-db
+
+# OS/editor noise
+.DS_Store
+*.swp
+*.swo
