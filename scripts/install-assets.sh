@@ -5,22 +5,24 @@ set -euo pipefail
 
 TARGET_HOME="$HOME/.config/xanewok-dotfiles"
 
-install_link() {
+# Copy, don't symlink: the install must outlive the checkout (clone, run, delete).
+# fragments/ and resources/ under TARGET_HOME are repo-owned and replaced wholesale;
+# per-machine state belongs in ~/.config/xanewok-local, never here.
+install_copy() {
   local src=$1 dst=$2
-  mkdir -p "$(dirname "$dst")"
 
-  if [ -L "$dst" ] && [ "$(readlink "$dst")" = "$src" ]; then
+  # Earlier versions symlinked into the checkout — migrate.
+  [ -L "$dst" ] && rm -f "$dst"
+
+  if [ -e "$dst" ] && diff -rq "$src" "$dst" >/dev/null 2>&1; then
+    echo "  ok: $dst (unchanged)"
     return 0
   fi
-  # A real file/dir here may hold local files — refuse; only a stale symlink is safe to swap.
-  if [ -e "$dst" ] && [ ! -L "$dst" ]; then
-    die "refusing to replace non-symlink $dst — move it aside and re-run"
-  fi
-  rm -f "$dst"
-  ln -s "$src" "$dst"
-  echo "link: $dst -> $src"
+  rm -rf "$dst"
+  cp -R "$src" "$dst"
+  echo "  copied: $dst"
 }
 
 mkdir -p "$TARGET_HOME"
-install_link "$DOTFILES_ROOT/fragments" "$TARGET_HOME/fragments"
-install_link "$DOTFILES_ROOT/resources" "$TARGET_HOME/resources"
+install_copy "$DOTFILES_ROOT/fragments" "$TARGET_HOME/fragments"
+install_copy "$DOTFILES_ROOT/resources" "$TARGET_HOME/resources"

@@ -1,82 +1,95 @@
-# Dotfiles Bootstrap
+# dotfiles
 
-Small, **additive** dotfiles for macOS and Linux — restores a coherent shell/tooling
-setup on a fresh machine without taking ownership of the box. Safe to run in a
-devcontainer; explicit profiles for a real machine. Not a machine-management
-framework (no Nix/chezmoi/Ansible) — small enough to audit in one sitting.
+Additive dotfiles for macOS and Linux — the same shell/tooling setup on every
+machine, safe to run in a devcontainer. Each rc file gets a single guarded block
+that sources a loader; the real config is copied to
+`~/.config/xanewok-dotfiles`, so the checkout doesn't need to stay around.
+Nothing existing is replaced, re-running is idempotent, and removal is two steps.
 
-## Usage
+Deliberately not a machine-management framework (no Nix, chezmoi, Ansible). The
+use case is restoring a working environment after a machine wipe or a security
+incident, from code small enough to audit in one sitting.
+
+## Install
 
 ```sh
 git clone https://github.com/Xanewok/dotfiles.git ~/dotfiles
 cd ~/dotfiles
-./install.sh            # = config: no sudo, no packages, never replaces a file
-./install.sh dev        # + CLI essentials (Homebrew on macOS, apt on Linux)
+./install.sh            # config only: no sudo, no packages, never replaces a file
+./install.sh dev        # + CLI tools (Homebrew on macOS, apt on Linux)
 ./install.sh desktop    # + GUI apps
 ./install.sh workstation
 ```
 
-Profiles are cumulative; `config` is the safe default, so a bare `./install.sh` is
-non-invasive (e.g. Codespaces).
+Profiles are cumulative; no argument means `config`, which is why a bare
+`./install.sh` is safe as an automatic Codespaces/devcontainer dotfiles script.
+`dev` and `desktop` refuse to install packages inside a container.
 
-| Profile | Adds | Notes |
-|---|---|---|
-| `config` | fragments + guarded blocks | no sudo, no packages, never replaces a file |
-| `dev` | CLI tools | skipped inside containers |
-| `desktop` | GUI apps | macOS: Ghostty/VS Code/1Password/font · Linux: font only |
-| `workstation` | host policy | intentionally empty for now |
+| Profile | Adds |
+|---|---|
+| `config` | guarded blocks + fragment symlinks |
+| `dev` | CLI essentials; on Linux also a pinned `mise` binary |
+| `desktop` | macOS: Ghostty, VS Code, 1Password, Fira Code. Linux: Fira Code |
+| `workstation` | personal host policy — intentionally empty so far |
 
-Package sets are `linux/apt.*.txt` and `macos/Brewfile.*` — those files are the source
-of truth, not this README.
+The package lists are `linux/apt.*.txt` and `macos/Brewfile.*`; edit those, not
+the scripts.
 
-## Why it's structured this way
+On a fresh macOS install, `git` itself requires the Xcode Command Line Tools
+(`xcode-select --install`, needs a GUI session) — that's the one step before the
+clone.
 
-**Additive, never replacing.** Your `~/.bashrc`, `~/.gitconfig`, etc. are touched only by
-adding one *guarded block* that sources a loader; everything real lives under
-`~/.config/xanewok-dotfiles/`. Base config stays intact, the layer is reversible, and
-re-running is idempotent. The block editor (`scripts/guarded-block.sh`) never guesses on
-a malformed block and only rewrites a file when content actually changes — it edits your
-real dotfiles, so it must not lose data.
+## How it works
 
-**One loader, versioned fragments.** The guarded block is a stable one-liner
-(`source loader.sh`); all config lives in tracked `fragments/`. Changing your setup means
-editing a fragment, not re-touching your rc — so the block never needs to change.
+`config` copies `fragments/` and `resources/` into `~/.config/xanewok-dotfiles`
+and adds one guarded block to each of `~/.zshrc`, `~/.bashrc`, `~/.gitconfig`,
+the tmux config, `~/.vimrc`, Neovim's `init.vim`, and Ghostty's config:
 
-**Fragments vs resources.** `fragments/` = snippets the guarded blocks source;
-`resources/` = helper scripts those fragments use.
+```sh
+# >>> xanewok dotfiles >>>
+if [ -f "$HOME/.config/xanewok-dotfiles/fragments/shell/loader.sh" ]; then
+  . "$HOME/.config/xanewok-dotfiles/fragments/shell/loader.sh"
+fi
+# <<< xanewok dotfiles <<<
+```
 
-**`config` is the safe default.** No sudo, no packages, no file replacement — safe in a
-devcontainer. Everything with side effects is an explicit, heavier profile.
+The block is stable: changing the setup means editing a fragment and re-running
+`./install.sh`, so rc files are touched once and never again. `scripts/guarded-block.sh` rewrites only its own
+block, leaves a malformed block untouched (warns instead of guessing), and skips
+the write when nothing changed.
 
-**Conservative package bootstrap.** No third-party apt repos added automatically;
-Homebrew is offered interactively, never auto-run. You approve each trust boundary
-instead of the tool silently taking standing root-trust.
+Existing setups are respected: if `~/.config/nvim/init.lua` exists the Neovim
+block is skipped (mixing it with `init.vim` is an error), and the tmux block goes
+to whichever of `~/.tmux.conf` / `~/.config/tmux/tmux.conf` is actually loaded.
 
-**`mise` is a pinned, checksummed binary — not a vendor repo.** Installed to
-`~/.local/bin`: no sudo, no standing apt-repo trust. Integrity is a sha256 you pin in
-`resources/mise/pinned.env` (ships disabled until filled). Works on any distro.
+- `fragments/` — the config itself: PATH, aliases, prompt, git, tmux, vim, ghostty
+- `resources/` — helpers the fragments use: git-prompt lookup, the mise version pin
+- `~/.config/xanewok-local/shell/local.sh` — untracked per-machine overlay,
+  sourced last if present; host quirks and secrets go there, never in the repo
 
-**The prompt reuses the OS's `__git_ps1`, not a vendored copy** — trust the signed
-apt/brew package, not executable code committed here (a plain branch fallback covers a
-box without it).
+## Trust boundaries
 
-**Heavy/risky things are deliberately absent** (Docker, Xcode, Android SDK, direnv hook,
-1Password CLI, secret managers). Add them later as explicit, risk-aware modules; leaving
-them out keeps this auditable.
+A merged commit is shell code that runs on every machine — protect the repo
+(required review, signed commits, 2FA) and never commit keys, tokens, or other
+credentials.
 
-## Security posture
+- Homebrew's installer is offered interactively with the command shown; it is
+  never run silently.
+- No third-party apt repos. `mise` on Linux is a single binary installed to
+  `~/.local/bin`, verified against the sha256 pinned in
+  `resources/mise/pinned.env` (skipped with a warning until you fill it in).
+- The git prompt reuses `__git_ps1` from the OS's own git package instead of
+  vendoring a copy; a plain branch-name fallback covers machines without it.
+- Heavy or risky tooling (Docker, Xcode, secret managers, direnv-style shell
+  hooks) is intentionally absent.
 
-**`fragments/` and `resources/shell/` are sourced by every interactive shell — a merged
-commit is code that runs on all your machines.** Protect the repo: branch protection +
-required review + signed commits + account 2FA. A `gitleaks`/`git-secrets` pre-commit
-hook is the real tripwire; `.gitignore` is only a backstop.
+## Uninstall
 
-Preferences, not secrets. Never commit SSH keys, API keys, `.env`, cloud credentials,
-kubeconfigs, wallet material, signing certs, or 1Password session material. Host-specific
-secrets go in an ignored local overlay (`~/.config/xanewok-local/shell/local.sh`, which
-the loader sources if present).
+Delete the `# >>> xanewok dotfiles >>>` … `# <<< xanewok dotfiles <<<` blocks
+from your rc files, then `rm -rf ~/.config/xanewok-dotfiles`.
 
-## Uninstalling
+## Development
 
-Delete the `# >>> xanewok dotfiles >>>` … `<<<` blocks from your rc files, then
-`rm -rf ~/.config/xanewok-dotfiles`.
+`scripts/smoke-test.sh` checks syntax and exercises the guarded-block editor
+(append, replace, idempotency, malformed-left-untouched). The portability floor
+is bash 3.2 and BSD awk — macOS defaults.
