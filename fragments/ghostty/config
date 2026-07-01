@@ -1,5 +1,4 @@
-# Dotfiles Ghostty fragment. Inserted as a guarded block into ~/.config/ghostty/config.
-font-family = FiraCode Nerd Font Mono
-font-size = 14
-copy-on-select = false
-confirm-close-surface = false
+theme = dark:Catppuccin Frappe,light:Catppuccin Latte
+font-family = Fira Code
+# Ghostty's default TERM (xterm-ghostty) has no terminfo on many remote hosts — keep it portable.
+term = xterm-256color
