@@ -1,4 +1,5 @@
-cask "ghostty"
-cask "visual-studio-code"
-cask "1password"
-cask "font-fira-code"
+# adopt: take over an identical manually-installed app instead of erroring on it.
+cask "ghostty", args: { adopt: true }
+cask "visual-studio-code", args: { adopt: true }
+cask "1password", args: { adopt: true }
+cask "font-fira-code", args: { adopt: true }
