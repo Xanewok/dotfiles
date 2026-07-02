@@ -21,11 +21,19 @@ case "$DOTFILES_OS" in
         log "switching developer directory to Xcode.app (sudo)"
         sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
       fi
-      log "accepting Xcode license + first-launch components (sudo)"
-      sudo xcodebuild -license accept
-      sudo xcodebuild -runFirstLaunch
-      log "ensuring iOS simulator runtime (large download; no Apple ID involved)"
-      xcodebuild -downloadPlatform iOS
+      # Gated so a converged machine re-runs sudo-free (and non-tty ssh works).
+      if ! xcodebuild -license check >/dev/null 2>&1; then
+        log "accepting Xcode license (sudo)"
+        sudo xcodebuild -license accept
+      fi
+      if ! xcodebuild -checkFirstLaunchStatus >/dev/null 2>&1; then
+        log "installing Xcode first-launch components (sudo)"
+        sudo xcodebuild -runFirstLaunch
+      fi
+      if ! xcrun simctl runtime list 2>/dev/null | grep -q "iOS.*Ready"; then
+        log "ensuring iOS simulator runtime (large download; no Apple ID involved)"
+        xcodebuild -downloadPlatform iOS
+      fi
     else
       warn "Xcode.app missing — download the .xip on another device, transfer, then:"
       warn "  pkgutil --check-signature <path>.xip   # MUST say 'signed Apple Software';"
@@ -53,11 +61,14 @@ if [ -z "$mise_bin" ]; then
   done
 fi
 if [ -n "$mise_bin" ]; then
-  log "pinning java for this machine (mise config.toml)"
+  log "pinning java + maestro for this machine (mise config.toml)"
   "$mise_bin" use --path "$HOME/.config/mise/config.toml" java@temurin-17 \
     || warn "mise java failed; install a JDK 17 manually"
+  # Maestro drives simulator/emulator UI for e2e flows (needs the JDK above).
+  "$mise_bin" use --path "$HOME/.config/mise/config.toml" maestro \
+    || warn "mise maestro failed"
 else
-  warn "mise unavailable; skipping java"
+  warn "mise unavailable; skipping java + maestro"
 fi
 
 log "mobile capability complete"
