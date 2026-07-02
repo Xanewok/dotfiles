@@ -35,11 +35,17 @@ if [ "$XANEWOK_DOTFILES_PROMPT" = "1" ]; then
       PS1='%n@%m:%~$(__dotfiles_git_ps1 " (%s)")%# '
     fi
   elif [ -n "${BASH_VERSION:-}" ]; then
+    # Reflect user@host:dir in the terminal title on xterm-alikes (as stock Debian does).
+    case "${TERM:-}" in
+      xterm*|rxvt*) _dotfiles_title='\[\e]0;\u@\h: \w\a\]' ;;
+      *) _dotfiles_title='' ;;
+    esac
     if [ "$_dotfiles_color" = 1 ]; then
-      PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[01;33m\]$(__dotfiles_git_ps1 " (%s)")\[\033[00m\]\$ '
+      PS1="${_dotfiles_title}"'\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[01;33m\]$(__dotfiles_git_ps1 " (%s)")\[\033[00m\]\$ '
     else
-      PS1='\u@\h:\w$(__dotfiles_git_ps1 " (%s)")\$ '
+      PS1="${_dotfiles_title}"'\u@\h:\w$(__dotfiles_git_ps1 " (%s)")\$ '
     fi
+    unset _dotfiles_title
   fi
 
   unset _dotfiles_color
