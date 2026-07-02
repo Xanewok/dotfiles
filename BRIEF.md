@@ -124,7 +124,13 @@ Installer must update only its own marked region and leave the rest of the file 
 
 Potential later additions:
 
-- `./install.sh remove config` to remove guarded blocks.
+- `./install.sh remove config` to remove guarded blocks. (Done: `./install.sh remove`.)
 - Explicit capabilities such as containers, Rust, Node, mobile, local-LLM.
 - Host-specific ignored local overlays.
 - Chezmoi backend while preserving `install.sh` as the public contract.
+- Hostname-hashed *accent* color for the prompt's host segment only (rest of the
+  prompt stays as is) — glanceable which-box-am-I across the fleet. Hash with
+  `cksum` (POSIX; macOS has no md5sum) into a curated readable palette, computed
+  once at shell start. See https://superuser.com/questions/1123671/hash-hostname-into-a-color,
+  https://aweirdimagination.net/2015/02/27/hash-based-hostname-colors/,
+  https://github.com/ramnes/context-color.
