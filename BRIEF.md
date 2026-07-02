@@ -133,9 +133,13 @@ Potential later additions:
   are not), (2) no extra consent boundary (Apple ID, SDK licenses stay
   interactive, inside the capability), (3) every machine wants it vs only
   machines with that role. First real candidate: `mobile` for the Expo stack —
-  full Xcode + simulator (via `xcodes`/`mas`, interactive), Android Studio
-  cask, Java via mise pins, ANDROID_HOME env fragment; in-app SDK downloads
-  and license acceptance stay documented manual steps.
+  Xcode as an Apple-signed `.xip` downloaded on another device and transferred
+  (no Apple ID ever signs into the machine — owner policy; `xip --expand`
+  verifies Apple's signature), then `xcodebuild -license accept` +
+  `xcodebuild -downloadPlatform iOS` (both anonymous); Android Studio cask,
+  Java via mise pins, ANDROID_HOME env fragment; SDK license acceptance stays
+  a documented manual step. Simulator builds need no signing identity;
+  physical-device builds go through EAS (credentials live at Expo, not here).
 - Host-specific ignored local overlays.
 - Chezmoi backend while preserving `install.sh` as the public contract.
 - Hostname-hashed *accent* color for the prompt's host segment only (rest of the
