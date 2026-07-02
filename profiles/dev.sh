@@ -37,10 +37,10 @@ if [ -z "$mise_bin" ]; then
 fi
 if [ -n "$mise_bin" ]; then
   log "installing mise-pinned tools"
-  # From / on purpose: only the global pins are in scope. Run from $HOME (or any
-  # project), a stray .node-version would get installed and shimmed too — hijacking
+  # -C /: resolve config from / so only the global pins are in scope. In $HOME
+  # context a stray .node-version would get installed and shimmed too — hijacking
   # node from whatever currently manages it (e.g. nodenv).
-  (cd / && "$mise_bin" install) || warn "mise install failed; pinned tools not materialized"
+  "$mise_bin" install -C / || warn "mise install failed; pinned tools not materialized"
 else
   warn "mise unavailable; skipping pinned tools"
 fi

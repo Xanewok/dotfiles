@@ -5,9 +5,6 @@ if ls --version >/dev/null 2>&1; then
   alias ls='ls --color=auto'
 else
   export CLICOLOR=1
-  # Match GNU defaults where it shows: bold-blue dirs (Ex), bold-cyan symlinks
-  # (Gx), bold-green executables (Cx). BSD's own default paints executables red.
-  export LSCOLORS="ExGxcxdxCxegedabagacad"
 fi
 
 alias ll='ls -lah'
