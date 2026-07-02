@@ -9,10 +9,22 @@ _dotfiles_source() {
   . "$1"
 }
 
+# Environment (PATH, mise shims, ANDROID_HOME, exports) — every shell, so login
+# non-interactive builds (`ssh host 'zsh -lc "…"'`) find the toolchain, not just
+# interactive terminals.
 _dotfiles_source "$DOTFILES_HOME/fragments/shell/path.sh"
 _dotfiles_source "$DOTFILES_HOME/fragments/shell/env.sh"
-_dotfiles_source "$DOTFILES_HOME/fragments/shell/aliases.sh"
-_dotfiles_source "$DOTFILES_HOME/fragments/shell/prompt.sh"
 
-# Local, untracked per-machine extension point.
+# Interactive-only. In zsh, aliases defined at startup expand inside `zsh -c "…"`
+# command strings, so loading them non-interactively could silently rewrite a build
+# command; and a prompt in a script is pointless.
+case $- in
+  *i*)
+    _dotfiles_source "$DOTFILES_HOME/fragments/shell/aliases.sh"
+    _dotfiles_source "$DOTFILES_HOME/fragments/shell/prompt.sh"
+    ;;
+esac
+
+# Local, untracked per-machine extension point. Must be re-source-safe: an
+# interactive login shell runs the loader twice (login file + rc file).
 _dotfiles_source "$HOME/.config/xanewok-local/shell/local.sh"

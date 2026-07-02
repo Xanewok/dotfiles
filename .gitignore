@@ -50,3 +50,6 @@ UTC--*
 .DS_Store
 *.swp
 *.swo
+
+# Session scratch — never commit
+RESUME_PROMPT.md

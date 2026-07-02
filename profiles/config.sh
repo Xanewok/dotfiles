@@ -15,6 +15,23 @@ log "adding guarded shell blocks"
 ensure_guarded_block "$HOME/.zshrc" "xanewok dotfiles" "#" "$shell_block"
 ensure_guarded_block "$HOME/.bashrc" "xanewok dotfiles" "#" "$shell_block"
 
+# Login shells source login files, NOT .zshrc/.bashrc — so a headless build over SSH
+# (`zsh -lc "…"`) would otherwise miss the toolchain. Put the loader there too; it's
+# idempotent, so an interactive login shell sourcing both is fine. (.zprofile, not
+# .zshenv: on macOS /etc/zprofile runs path_helper AFTER .zshenv and would demote our
+# PATH prepends; .zprofile runs after it, so they stick.)
+ensure_guarded_block "$HOME/.zprofile" "xanewok dotfiles" "#" "$shell_block"
+
+# bash/sh read only the FIRST of these for a login shell — target whichever is live,
+# and never CREATE .bash_profile (it would shadow an existing .profile).
+bash_login="$HOME/.profile"
+if [ -f "$HOME/.bash_profile" ]; then
+  bash_login="$HOME/.bash_profile"
+elif [ -f "$HOME/.bash_login" ]; then
+  bash_login="$HOME/.bash_login"
+fi
+ensure_guarded_block "$bash_login" "xanewok dotfiles" "#" "$shell_block"
+
 git_block='[include]
     path = ~/.config/xanewok-dotfiles/fragments/git/config'
 

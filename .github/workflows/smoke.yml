@@ -1,0 +1,26 @@
+name: smoke
+
+# The one bug class you can't catch on a single dev box: the cross-platform floor.
+# macos-latest gives bash 3.2 + BSD userland; ubuntu-latest gives GNU. We invoke the
+# system /bin/bash explicitly so the macOS job really exercises 3.2 (the runner's PATH
+# may have a newer bash). This runs the same scripts/smoke-test.sh you'd run locally;
+# it does not (can't) test the heavy capabilities (Xcode/SDK/emulator) — those stay
+# verified by running on the real machines.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  smoke:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: smoke-test (system /bin/bash)
+        run: |
+          /bin/bash --version | head -1
+          /bin/bash scripts/smoke-test.sh

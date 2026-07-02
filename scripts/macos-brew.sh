@@ -35,4 +35,16 @@ EOF
 fi
 
 export HOMEBREW_NO_AUTO_UPDATE=1   # skip the slow `brew update` before each bundle
+
+# A shared Homebrew prefix is owned by the admin who installed it; a non-admin user
+# (e.g. a dedicated builder) can't write it, so `brew bundle` would fail. Degrade to a
+# check + warning (an admin runs the bundle once) instead of aborting the install.
+prefix="$(brew --prefix 2>/dev/null || true)"
+if [ -n "$prefix" ] && [ ! -w "$prefix/Cellar" ] && [ ! -w "$prefix" ]; then
+  warn "Homebrew prefix $prefix is not writable by $(id -un); skipping 'brew bundle'."
+  warn "An admin should run it once. Still missing from Brewfile.$LAYER:"
+  brew bundle check --file "$DOTFILES_ROOT/macos/Brewfile.$LAYER" --verbose 2>&1 | sed 's/^/  /' || true
+  exit 0
+fi
+
 brew bundle --file "$DOTFILES_ROOT/macos/Brewfile.$LAYER"

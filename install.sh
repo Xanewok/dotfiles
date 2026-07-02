@@ -24,8 +24,11 @@ Profiles are cumulative:
                Packages installed by dev/desktop are never uninstalled.
 
 Capabilities are orthogonal — run on top of whatever profile the machine has:
-  mobile       Expo/React-Native toolchain: Xcode license + simulator (no Apple
-               ID on the machine), CocoaPods, watchman, Android Studio, JDK.
+  mobile       Expo/React-Native toolchain; builds on the dev profile. iOS half is
+               macOS-only (Xcode license + simulator, no Apple ID); Android SDK on
+               macOS + Linux (emulator bootable on Apple Silicon + x86_64 Linux);
+               plus Android Studio, CocoaPods, watchman. SDK licenses are prompted on
+               a terminal, refused non-interactively; pass --agree-licenses for headless.
 
 Safe default:
   ./install.sh with no args means config only.
@@ -59,7 +62,7 @@ case "$PROFILE" in
     "$ROOT/profiles/remove.sh"
     ;;
   mobile)
-    "$ROOT/profiles/mobile.sh"
+    "$ROOT/profiles/mobile.sh" "${@:2}"
     ;;
   *)
     die "unknown profile: $PROFILE"

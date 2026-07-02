@@ -8,10 +8,12 @@ for f in \
   install.sh \
   profiles/config.sh \
   profiles/dev.sh \
+  profiles/mobile.sh \
   scripts/guarded-block.sh \
   fragments/shell/loader.sh \
   fragments/mise/config.toml \
-  resources/shell/git-prompt.sh; do
+  resources/shell/git-prompt.sh \
+  resources/android/pinned.env; do
   test -f "$ROOT/$f" || { echo "missing: $f"; exit 1; }
 done
 
@@ -61,5 +63,15 @@ remove_guarded_block "$rc" "smoke" "#" >/dev/null
 [ "$(cat "$rc")" = "$before" ] || die "smoke: no-op removal changed the file"
 remove_guarded_block "$tmpd/malformed.rc" "smoke" "#" >/dev/null 2>&1
 cmp -s "$tmpd/malformed.rc" "$tmpd/malformed.orig" || die "smoke: removal modified a malformed file"
+
+echo "checking mobile capability helpers..."
+# mobile.sh is source-safe (guarded main), so its pure helpers are unit-testable here.
+. "$ROOT/profiles/mobile.sh"
+[ "$(android_abi arm64)"   = "arm64-v8a" ] || die "smoke: android_abi arm64 -> arm64-v8a"
+[ "$(android_abi aarch64)" = "arm64-v8a" ] || die "smoke: android_abi aarch64 -> arm64-v8a"
+[ "$(android_abi x86_64)"  = "x86_64" ]    || die "smoke: android_abi x86_64 -> x86_64"
+[ "$(android_abi i686)"    = "x86_64" ]    || die "smoke: android_abi default -> x86_64"
+[ "$(android_sdk_root macos)" = "$HOME/Library/Android/sdk" ] || die "smoke: android_sdk_root macos"
+[ "$(android_sdk_root linux)" = "$HOME/Android/Sdk" ]         || die "smoke: android_sdk_root linux"
 
 echo "ok"

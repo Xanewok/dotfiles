@@ -27,12 +27,7 @@ case "$DOTFILES_OS" in
 esac
 
 # Materialize the fleet tool pins (fragments/mise/config.toml).
-mise_bin="$(command -v mise 2>/dev/null || true)"
-if [ -z "$mise_bin" ]; then
-  for m in "$HOME/.local/bin/mise" /opt/homebrew/bin/mise /usr/local/bin/mise; do
-    if [ -x "$m" ]; then mise_bin="$m"; break; fi
-  done
-fi
+mise_bin="$(find_mise)"
 if [ -n "$mise_bin" ]; then
   log "installing mise-pinned tools"
   # -C /: resolve config from / so only the global pins are in scope. In $HOME
