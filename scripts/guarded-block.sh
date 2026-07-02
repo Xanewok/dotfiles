@@ -63,3 +63,41 @@ ensure_guarded_block() {
   fi
   rm -f "$tmp"
 }
+
+# remove_guarded_block TARGET NAME COMMENT_PREFIX
+# Delete the block, markers included. Same safety contract as above: an
+# unterminated block leaves the file untouched with a warning. Missing file or
+# absent block is a no-op.
+remove_guarded_block() {
+  local target=$1 name=$2 prefix=$3
+  local start="$prefix >>> $name >>>"
+  local end="$prefix <<< $name <<<"
+
+  [ -f "$target" ] || return 0
+
+  local tmp rc=0
+  tmp=$(mktemp "${TMPDIR:-/tmp}/guarded-block.XXXXXX")
+  start=$start end=$end awk '
+    BEGIN { start = ENVIRON["start"]; end = ENVIRON["end"] }
+    $0 == start && !done { holding = 1; next }
+    holding && $0 == end { holding = 0; done = 1; next }
+    holding { next }
+    { print }
+    END { if (holding) exit 3 }
+  ' "$target" > "$tmp" || rc=$?
+
+  if [ "$rc" -eq 3 ]; then
+    warn "unterminated guarded block '$name' in $target; left unchanged"
+    rm -f "$tmp"
+    return 0
+  fi
+  [ "$rc" -eq 0 ] || { rm -f "$tmp"; die "guarded-block: awk failed on $target"; }
+
+  if cmp -s "$tmp" "$target"; then
+    echo "  ok: $target (no block)"
+  else
+    cat "$tmp" > "$target"
+    echo "  removed block: $target"
+  fi
+  rm -f "$tmp"
+}

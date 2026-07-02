@@ -12,13 +12,16 @@ export DOTFILES_ROOT="$ROOT"
 usage() {
   cat <<'EOF'
 Usage:
-  ./install.sh [config|dev|desktop|workstation]
+  ./install.sh [config|dev|desktop|workstation|remove]
 
 Profiles are cumulative:
   config       Additive dotfiles only: fragments/resources + guarded blocks.
   dev          config + universal CLI essentials.
   desktop      dev + GUI comfort: Ghostty, fonts, VS Code, 1Password app.
   workstation  desktop + personal host policy. Currently intentionally small.
+
+  remove       Undo config: strip guarded blocks, delete ~/.config/xanewok-dotfiles.
+               Packages installed by dev/desktop are never uninstalled.
 
 Safe default:
   ./install.sh with no args means config only.
@@ -47,6 +50,9 @@ case "$PROFILE" in
     "$ROOT/profiles/dev.sh"
     "$ROOT/profiles/desktop.sh"
     "$ROOT/profiles/workstation.sh"
+    ;;
+  remove)
+    "$ROOT/profiles/remove.sh"
     ;;
   *)
     die "unknown profile: $PROFILE"

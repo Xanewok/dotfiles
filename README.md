@@ -92,8 +92,11 @@ credentials.
 
 ## Uninstall
 
-Delete the `# >>> xanewok dotfiles >>>` … `# <<< xanewok dotfiles <<<` blocks
-from your rc files, then `rm -rf ~/.config/xanewok-dotfiles`.
+`./install.sh remove` strips the guarded blocks and deletes
+`~/.config/xanewok-dotfiles` — undoing exactly what `config` did. Packages from
+`dev`/`desktop` and the `~/.config/xanewok-local` overlay are never touched.
+Manual equivalent: delete the `# >>> xanewok dotfiles >>>` … `# <<< xanewok
+dotfiles <<<` blocks from your rc files, then `rm -rf ~/.config/xanewok-dotfiles`.
 
 ## Development
 

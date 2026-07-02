@@ -48,4 +48,17 @@ cp "$tmpd/malformed.rc" "$tmpd/malformed.orig"
 ensure_guarded_block "$tmpd/malformed.rc" "smoke" "#" "body v3" >/dev/null 2>&1
 cmp -s "$tmpd/malformed.rc" "$tmpd/malformed.orig" || die "smoke: malformed block was modified"
 
+# Removal: block and markers gone, surrounding content intact.
+remove_guarded_block "$rc" "smoke" "#" >/dev/null
+if grep -qF "body v2" "$rc"; then die "smoke: removal left the body behind"; fi
+if grep -qF ">>>" "$rc"; then die "smoke: removal left markers behind"; fi
+grep -qF "existing line" "$rc" || die "smoke: removal lost surrounding content"
+
+# Removing an absent block is a no-op; a malformed block is left untouched.
+before="$(cat "$rc")"
+remove_guarded_block "$rc" "smoke" "#" >/dev/null
+[ "$(cat "$rc")" = "$before" ] || die "smoke: no-op removal changed the file"
+remove_guarded_block "$tmpd/malformed.rc" "smoke" "#" >/dev/null 2>&1
+cmp -s "$tmpd/malformed.rc" "$tmpd/malformed.orig" || die "smoke: removal modified a malformed file"
+
 echo "ok"
