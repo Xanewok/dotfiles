@@ -20,5 +20,14 @@ EOF
   fi
 fi
 
+# The installer can't modify this process's PATH (interactive shells get brew via
+# fragments/shell/path.sh) — pick it up from the standard prefixes for this run.
+if ! has brew; then
+  for _brew in /opt/homebrew/bin/brew /usr/local/bin/brew; do
+    if [ -x "$_brew" ]; then eval "$("$_brew" shellenv)"; break; fi
+  done
+fi
+has brew || die "brew not on PATH even after install"
+
 export HOMEBREW_NO_AUTO_UPDATE=1   # skip the slow `brew update` before each bundle
 brew bundle --file "$DOTFILES_ROOT/macos/Brewfile.$LAYER"
