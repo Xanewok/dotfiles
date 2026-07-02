@@ -7,7 +7,6 @@ pkg-config
 libssl-dev
 tmux
 vim
-neovim
 ripgrep
 fd-find
 fzf
