@@ -5,7 +5,7 @@ LAYER="${1:-dev}"
 
 . "$DOTFILES_ROOT/scripts/lib.sh"
 
-case "$LAYER" in dev|desktop) ;; *) die "unknown brew layer: $LAYER" ;; esac
+case "$LAYER" in dev|desktop|mobile) ;; *) die "unknown brew layer: $LAYER" ;; esac
 
 # brew may be on disk but not on this shell's PATH (non-login ssh shells; or the
 # moment after the installer runs, which can't modify this process's environment —

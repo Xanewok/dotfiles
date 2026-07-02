@@ -32,6 +32,11 @@ Profiles are cumulative; no argument means `config`, which is why a bare
 | `desktop` | macOS: Ghostty, VS Code, 1Password, Fira Code. Linux: Fira Code |
 | `workstation` | personal host policy — intentionally empty so far |
 
+Capabilities are orthogonal to the profile ladder — a machine opts into the
+roles it plays: `./install.sh mobile` adds the Expo/React-Native toolchain
+(Xcode license + simulator with no Apple ID on the machine, CocoaPods,
+watchman, Android Studio, JDK via mise) on top of whatever profile is installed.
+
 The package lists are `linux/apt.*.txt` and `macos/Brewfile.*`; edit those, not
 the scripts.
 

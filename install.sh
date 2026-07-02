@@ -23,6 +23,10 @@ Profiles are cumulative:
   remove       Undo config: strip guarded blocks, delete ~/.config/xanewok-dotfiles.
                Packages installed by dev/desktop are never uninstalled.
 
+Capabilities are orthogonal — run on top of whatever profile the machine has:
+  mobile       Expo/React-Native toolchain: Xcode license + simulator (no Apple
+               ID on the machine), CocoaPods, watchman, Android Studio, JDK.
+
 Safe default:
   ./install.sh with no args means config only.
 EOF
@@ -53,6 +57,9 @@ case "$PROFILE" in
     ;;
   remove)
     "$ROOT/profiles/remove.sh"
+    ;;
+  mobile)
+    "$ROOT/profiles/mobile.sh"
     ;;
   *)
     die "unknown profile: $PROFILE"

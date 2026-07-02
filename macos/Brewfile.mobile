@@ -1,0 +1,4 @@
+# Local Expo/React-Native builds: CocoaPods for ios/ pods, watchman for Metro.
+brew "cocoapods"
+brew "watchman"
+cask "android-studio", args: { adopt: true }
