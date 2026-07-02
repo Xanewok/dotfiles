@@ -10,6 +10,7 @@ _dotfiles_source() {
 }
 
 _dotfiles_source "$DOTFILES_HOME/fragments/shell/path.sh"
+_dotfiles_source "$DOTFILES_HOME/fragments/shell/env.sh"
 _dotfiles_source "$DOTFILES_HOME/fragments/shell/aliases.sh"
 _dotfiles_source "$DOTFILES_HOME/fragments/shell/prompt.sh"
 
