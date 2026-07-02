@@ -14,9 +14,8 @@ case "$DOTFILES_OS" in
     ;;
   linux)
     "$DOTFILES_ROOT/scripts/linux-apt.sh" dev
-    # Debian ships fd as `fdfind` (binary name clash); the package's own README
-    # suggests a user-local symlink. A real binary name — scripts, fzf, and
-    # editors find it too — without pulling in a Rust toolchain for cargo install.
+    # Debian renames fd to fdfind (name clash); its own README suggests this
+    # symlink. A real binary, not an alias: fzf/editors/scripts find it too.
     if has fdfind && ! has fd && [ ! -e "$HOME/.local/bin/fd" ]; then
       mkdir -p "$HOME/.local/bin"
       ln -s "$(command -v fdfind)" "$HOME/.local/bin/fd"
@@ -27,8 +26,7 @@ case "$DOTFILES_OS" in
     ;;
 esac
 
-# Materialize the fleet tool pins (fragments/mise/config.toml). Missing mise or
-# a failed download degrades with a warning — never fails the profile.
+# Materialize the fleet tool pins (fragments/mise/config.toml).
 mise_bin="$(command -v mise 2>/dev/null || true)"
 if [ -z "$mise_bin" ]; then
   for m in "$HOME/.local/bin/mise" /opt/homebrew/bin/mise /usr/local/bin/mise; do

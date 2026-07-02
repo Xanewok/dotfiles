@@ -26,7 +26,7 @@ if [ "$XANEWOK_DOTFILES_PROMPT" = "1" ]; then
     fi
   fi
 
-  # Matches the bashrc prompt style.
+  # One scheme on both shells: green user@host, blue path, yellow git branch.
   if [ -n "${ZSH_VERSION:-}" ]; then
     setopt PROMPT_SUBST 2>/dev/null || true
     # Reflect user@host:dir in the terminal title, as the bash branch does.

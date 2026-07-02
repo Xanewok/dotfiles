@@ -46,9 +46,8 @@ else
   ensure_guarded_block "$HOME/.config/nvim/init.vim" "xanewok dotfiles" '"' "$vim_block"
 fi
 
-# Ghostty may not be installed; the block is still additive. Ghostty only reads
-# ~/.config/ghostty/config (also on macOS) — the fragment's .ghostty suffix is
-# a repo naming convention, not a path Ghostty knows about.
+# Ghostty reads only ~/.config/ghostty/config (macOS too); the fragment's
+# .ghostty suffix is repo naming, not a path Ghostty knows about.
 if [ -f "$DOTFILES_ROOT/fragments/ghostty/config.ghostty" ]; then
   ghostty_block="$(cat "$DOTFILES_ROOT/fragments/ghostty/config.ghostty")"
   log "adding guarded Ghostty config block"

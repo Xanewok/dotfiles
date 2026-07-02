@@ -24,7 +24,7 @@ _dotfiles_path_prepend "$HOME/.local/share/mise/shims"
 # User-local tools
 _dotfiles_path_prepend "$HOME/.local/bin"
 
-# Rust/Cargo; installed only if present.
+# Rust/Cargo
 _dotfiles_path_prepend "$HOME/.cargo/bin"
 
 export PATH
