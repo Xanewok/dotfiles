@@ -7,7 +7,20 @@ LAYER="${1:-dev}"
 
 case "$LAYER" in dev|desktop) ;; *) die "unknown brew layer: $LAYER" ;; esac
 
-if ! has brew; then
+# brew may be on disk but not on this shell's PATH (non-login ssh shells; or the
+# moment after the installer runs, which can't modify this process's environment —
+# interactive shells get it via fragments/shell/path.sh). Probe the standard
+# prefixes before concluding it's missing.
+find_brew() {
+  has brew && return 0
+  local b
+  for b in /opt/homebrew/bin/brew /usr/local/bin/brew; do
+    if [ -x "$b" ]; then eval "$("$b" shellenv)"; return 0; fi
+  done
+  return 1
+}
+
+if ! find_brew; then
   cat <<'EOF'
 Homebrew is not installed. Official installer (crosses a trust boundary — run only
 on a clean machine you trust):
@@ -18,16 +31,8 @@ EOF
   else
     die "Homebrew is required for the macOS dev/desktop profiles"
   fi
+  find_brew || die "brew not found even after install"
 fi
-
-# The installer can't modify this process's PATH (interactive shells get brew via
-# fragments/shell/path.sh) — pick it up from the standard prefixes for this run.
-if ! has brew; then
-  for _brew in /opt/homebrew/bin/brew /usr/local/bin/brew; do
-    if [ -x "$_brew" ]; then eval "$("$_brew" shellenv)"; break; fi
-  done
-fi
-has brew || die "brew not on PATH even after install"
 
 export HOMEBREW_NO_AUTO_UPDATE=1   # skip the slow `brew update` before each bundle
 brew bundle --file "$DOTFILES_ROOT/macos/Brewfile.$LAYER"
