@@ -17,6 +17,7 @@ remove_guarded_block "$HOME/.config/tmux/tmux.conf" "xanewok dotfiles" "#"
 remove_guarded_block "$HOME/.vimrc" "xanewok dotfiles" '"'
 remove_guarded_block "$HOME/.config/nvim/init.vim" "xanewok dotfiles" '"'
 remove_guarded_block "$HOME/.config/ghostty/config" "xanewok dotfiles" "#"
+remove_guarded_block "$HOME/.config/mise/conf.d/xanewok-dotfiles.toml" "xanewok dotfiles" "#"
 
 log "removing ~/.config/xanewok-dotfiles"
 rm -rf "$HOME/.config/xanewok-dotfiles"

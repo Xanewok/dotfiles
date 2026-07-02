@@ -10,6 +10,7 @@ for f in \
   profiles/dev.sh \
   scripts/guarded-block.sh \
   fragments/shell/loader.sh \
+  fragments/mise/config.toml \
   resources/shell/git-prompt.sh; do
   test -f "$ROOT/$f" || { echo "missing: $f"; exit 1; }
 done

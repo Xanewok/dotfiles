@@ -1,0 +1,9 @@
+# Fleet-wide tool pins, materialized by `mise install` during `./install.sh dev`.
+# Installed as a conf.d drop-in, so `mise use -g` (which edits config.toml)
+# never collides with this file. Machine-local tools: use `mise use -g`.
+[tools]
+neovim = "0.11"
+
+[settings]
+# Honor .node-version files (nodenv-style) for per-project node selection.
+idiomatic_version_file_enable_tools = ["node"]

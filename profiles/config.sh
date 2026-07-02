@@ -55,4 +55,12 @@ if [ -f "$DOTFILES_ROOT/fragments/ghostty/config.ghostty" ]; then
   ensure_guarded_block "$HOME/.config/ghostty/config" "xanewok dotfiles" "#" "$ghostty_block"
 fi
 
+# Fleet tool pins for mise (a conf.d drop-in merges with mise's own global
+# config, so per-machine `mise use -g` never collides with this block).
+if [ -f "$DOTFILES_ROOT/fragments/mise/config.toml" ]; then
+  mise_block="$(cat "$DOTFILES_ROOT/fragments/mise/config.toml")"
+  log "adding guarded mise config block"
+  ensure_guarded_block "$HOME/.config/mise/conf.d/xanewok-dotfiles.toml" "xanewok dotfiles" "#" "$mise_block"
+fi
+
 log "config profile complete"
