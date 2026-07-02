@@ -1,3 +1,6 @@
+# gitk + git-gui via brew's Aqua Tcl/Tk — native windows, no XQuartz needed.
+brew "git-gui"
+
 # adopt: take over an identical manually-installed app instead of erroring on it.
 cask "ghostty", args: { adopt: true }
 cask "visual-studio-code", args: { adopt: true }
