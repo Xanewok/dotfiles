@@ -1,6 +1,6 @@
 # Fleet-wide tool pins, materialized by `mise install` during `./install.sh dev`.
-# Installed as a conf.d drop-in, so `mise use -g` (which edits config.toml)
-# never collides with this file. Machine-local tools: use `mise use -g`.
+# Installed as a conf.d drop-in; the config profile also creates an empty
+# ~/.config/mise/config.toml so `mise use -g` edits that file, never this one.
 [tools]
 neovim = "0.11"
 

@@ -39,8 +39,10 @@ case "$DOTFILES_OS" in
     ;;
 esac
 
-# Gradle needs a JDK. Pinned per-machine (`use -g`), not in the fleet mise config —
-# the machine opts into the role; other machines never download a JDK.
+# Gradle needs a JDK, pinned per-machine, not in the fleet mise config — the
+# machine opts into the role; other machines never download a JDK. --path, not
+# -g: with only our conf.d drop-in present, -g edits (and the next install
+# wipes) the guarded block.
 mise_bin="$(command -v mise 2>/dev/null || true)"
 if [ -z "$mise_bin" ]; then
   for m in "$HOME/.local/bin/mise" /opt/homebrew/bin/mise /usr/local/bin/mise; do
@@ -48,8 +50,9 @@ if [ -z "$mise_bin" ]; then
   done
 fi
 if [ -n "$mise_bin" ]; then
-  log "pinning java for this machine (mise use -g java@temurin-17)"
-  "$mise_bin" use -g java@temurin-17 || warn "mise java failed; install a JDK 17 manually"
+  log "pinning java for this machine (mise config.toml)"
+  "$mise_bin" use --path "$HOME/.config/mise/config.toml" java@temurin-17 \
+    || warn "mise java failed; install a JDK 17 manually"
 else
   warn "mise unavailable; skipping java"
 fi

@@ -60,6 +60,10 @@ if [ -f "$DOTFILES_ROOT/fragments/mise/config.toml" ]; then
   mise_block="$(cat "$DOTFILES_ROOT/fragments/mise/config.toml")"
   log "adding guarded mise config block"
   ensure_guarded_block "$HOME/.config/mise/conf.d/xanewok-dotfiles.toml" "xanewok dotfiles" "#" "$mise_block"
+  # Guarantee mise's own editable global config exists: `mise use -g` writes to
+  # whichever global config it finds, and if our drop-in is the only one it
+  # would edit the guarded block — which the next install wipes.
+  [ -e "$HOME/.config/mise/config.toml" ] || touch "$HOME/.config/mise/config.toml"
 fi
 
 log "config profile complete"
