@@ -29,6 +29,14 @@ if [ "$XANEWOK_DOTFILES_PROMPT" = "1" ]; then
   # Matches the bashrc prompt style.
   if [ -n "${ZSH_VERSION:-}" ]; then
     setopt PROMPT_SUBST 2>/dev/null || true
+    # Reflect user@host:dir in the terminal title, as the bash branch does.
+    # add-zsh-hook composes with other precmd users (e.g. Apple's /etc/zshrc).
+    case "${TERM:-}" in
+      xterm*|rxvt*)
+        _dotfiles_set_title() { print -Pn '\e]0;%n@%m: %~\a'; }
+        autoload -Uz add-zsh-hook 2>/dev/null && add-zsh-hook precmd _dotfiles_set_title
+        ;;
+    esac
     if [ "$_dotfiles_color" = 1 ]; then
       PS1='%F{green}%n@%m%f:%F{blue}%~%f%F{yellow}$(__dotfiles_git_ps1 " (%s)")%f%# '
     else
