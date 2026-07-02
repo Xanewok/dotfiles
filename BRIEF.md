@@ -126,6 +126,16 @@ Potential later additions:
 
 - `./install.sh remove config` to remove guarded blocks. (Done: `./install.sh remove`.)
 - Explicit capabilities such as containers, Rust, Node, mobile, local-LLM.
+  Unlike profiles, capabilities are *orthogonal*, explicitly invoked groups
+  (e.g. `./install.sh mobile`) — they do not stack in the config→dev→desktop
+  chain; a machine opts into the roles it plays. Inclusion test for the base
+  profiles vs a capability: (1) auditable in one sitting (Xcode/Android SDK
+  are not), (2) no extra consent boundary (Apple ID, SDK licenses stay
+  interactive, inside the capability), (3) every machine wants it vs only
+  machines with that role. First real candidate: `mobile` for the Expo stack —
+  full Xcode + simulator (via `xcodes`/`mas`, interactive), Android Studio
+  cask, Java via mise pins, ANDROID_HOME env fragment; in-app SDK downloads
+  and license acceptance stay documented manual steps.
 - Host-specific ignored local overlays.
 - Chezmoi backend while preserving `install.sh` as the public contract.
 - Hostname-hashed *accent* color for the prompt's host segment only (rest of the
