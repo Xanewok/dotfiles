@@ -28,7 +28,8 @@ case "$DOTFILES_OS" in
       xcodebuild -downloadPlatform iOS
     else
       warn "Xcode.app missing — download the .xip on another device, transfer, then:"
-      warn "  xip --expand Xcode_*.xip && sudo mv Xcode.app /Applications/"
+      warn "  mkdir -p ~/xcode-stage && cd ~/xcode-stage   # NOT ~/Downloads: TCC blocks"
+      warn "  xip --expand <path>.xip && mv Xcode.app /Applications/   # headless xip there fails"
       warn "re-run './install.sh mobile' afterwards; skipping the iOS half"
     fi
     "$DOTFILES_ROOT/scripts/macos-brew.sh" mobile
