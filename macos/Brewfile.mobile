@@ -1,7 +1,7 @@
 # Local Expo/React-Native builds: CocoaPods for ios/ pods, watchman for Metro.
 # (mise/JDK come from the dev profile, which mobile requires — see profiles/mobile.sh.)
+# No Android Studio or android-commandlinetools casks: this is a headless toolchain,
+# and the Android SDK cmdline-tools come from the pinned zip (resources/android/
+# pinned.env) so a non-admin builder can provision without brew or a GUI.
 brew "cocoapods"
 brew "watchman"
-cask "android-studio", args: { adopt: true }
-# NB: no android-commandlinetools cask — cmdline-tools come from the pinned zip
-# (resources/android/pinned.env), so a non-admin builder can provision without brew.

@@ -3,6 +3,9 @@
 # ~/.config/mise/config.toml so `mise use -g` edits that file, never this one.
 [tools]
 neovim = "0.11"
+# Fleet baseline node (current LTS). A per-project .node-version overrides it
+# (idiomatic_version_file_enable_tools below); replaces nodenv as node's owner.
+node = "22"
 
 [settings]
 # Honor .node-version files (nodenv-style) for per-project node selection.
