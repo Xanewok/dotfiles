@@ -71,6 +71,16 @@ if [ -f "$DOTFILES_ROOT/fragments/ghostty/config.ghostty" ]; then
   ensure_guarded_block "$HOME/.config/ghostty/config" "xanewok dotfiles" "#" "$ghostty_block"
 fi
 
+# ssh: enable macOS's native Secure-Enclave key provider. The fragment's `Match exec`
+# gates it to machines where the provider exists, so this Include is a no-op on Linux
+# and pre-Tahoe macOS. `Include` needs OpenSSH 7.3+.
+if [ -f "$DOTFILES_ROOT/fragments/ssh/config" ]; then
+  log "adding guarded ssh config include"
+  ensure_guarded_block "$HOME/.ssh/config" "xanewok dotfiles" "#" 'Include ~/.config/xanewok-dotfiles/fragments/ssh/config'
+  chmod 700 "$HOME/.ssh" 2>/dev/null || true
+  chmod 600 "$HOME/.ssh/config" 2>/dev/null || true
+fi
+
 # Fleet tool pins for mise (a conf.d drop-in merges with mise's own global
 # config, so per-machine `mise use -g` never collides with this block).
 if [ -f "$DOTFILES_ROOT/fragments/mise/config.toml" ]; then
