@@ -49,7 +49,7 @@ cd dotfiles-main && ./install.sh
 
 `config` copies `fragments/` and `resources/` into `~/.config/xanewok-dotfiles`, then
 adds one guarded block to each rc file (`.zshrc`, `.bashrc`, the login files,
-`.gitconfig`, tmux/vim/Neovim, Ghostty):
+`.gitconfig`, tmux/vim/Neovim, Ghostty, the `mise` drop-in, and `~/.ssh/config`):
 
 ```sh
 # >>> xanewok dotfiles >>>
@@ -67,6 +67,9 @@ fi
   load only in interactive ones.
 - `mise` supplies optional per-project toolchains (e.g. Node, Java); brew/apt supply the
   baseline. A pre-set `ANDROID_HOME` or existing toolchain manager is left alone.
+- `~/.ssh/config` is the one security-sensitive target: it gets only an `Include` of a
+  fragment gated to macOS's Secure Enclave key provider (inert on Linux and pre-Tahoe
+  macOS). Your keys and the rest of your ssh config are never touched.
 - `~/.config/xanewok-local/shell/local.sh` is an untracked per-machine overlay, sourced
   last; host quirks and machine secrets go there.
 
