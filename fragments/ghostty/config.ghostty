@@ -1,4 +1,7 @@
 theme = dark:Catppuccin Frappe,light:Catppuccin Latte
 font-family = Fira Code
+# Breathing room so the prompt/output don't hug the window edges.
+window-padding-x = 10
+window-padding-y = 8
 # Ghostty's default TERM (xterm-ghostty) has no terminfo on many remote hosts — keep it portable.
 term = xterm-256color
