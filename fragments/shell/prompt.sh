@@ -26,17 +26,19 @@ if [ "$XANEWOK_DOTFILES_PROMPT" = "1" ]; then
     fi
   fi
 
-  # The username is always shown as a small stable anchor; the "@host" is added only
-  # when it carries information: over SSH, as root, or after su/sudo into an account
-  # that isn't your login (the Starship/Spaceship rule). Locally as yourself the host
-  # is noise you already know, so it's dropped and the prompt is just user:path.
+  # Identity is shown only when informative (Starship's rule). The username appears
+  # when you're not your normal local self: a different user than you logged in as
+  # (logname, not a hardcoded UID — survives macOS's 501 and managed boxes), root, or
+  # over SSH. The @host is added only over SSH — it answers "where", which only matters
+  # remotely. Locally as yourself the prompt is just the path. Root name is always red.
   _dotfiles_root=0
   [ "$(id -u 2>/dev/null)" = 0 ] && _dotfiles_root=1
   _dotfiles_show_host=0
   [ -n "${SSH_CONNECTION:-}${SSH_CLIENT:-}${SSH_TTY:-}" ] && _dotfiles_show_host=1
-  [ "$_dotfiles_root" = 1 ] && _dotfiles_show_host=1
+  _dotfiles_show_user="$_dotfiles_show_host"
+  [ "$_dotfiles_root" = 1 ] && _dotfiles_show_user=1
   _dotfiles_login="$(logname 2>/dev/null || true)"
-  [ -n "$_dotfiles_login" ] && [ "$_dotfiles_login" != "$(id -un 2>/dev/null)" ] && _dotfiles_show_host=1
+  [ -n "$_dotfiles_login" ] && [ "$_dotfiles_login" != "$(id -un 2>/dev/null)" ] && _dotfiles_show_user=1
   unset _dotfiles_login
 
   # Per-host hue: hash the short hostname to a 256-palette color that inherits the
@@ -67,16 +69,20 @@ if [ "$XANEWOK_DOTFILES_PROMPT" = "1" ]; then
         ;;
     esac
     if [ "$_dotfiles_color" = 1 ]; then
-      # username always (root name in red); @host only when informative, in its hue.
+      # root name in red (%(!..)); @host only over SSH, in its hashed hue.
       if [ "$_dotfiles_show_host" = 1 ]; then
         _dotfiles_id="%(!.%F{red}%n%f.%n)@%F{\${XANEWOK_HOST_COLOR:-$_dotfiles_host_color}}%m%f:"
-      else
+      elif [ "$_dotfiles_show_user" = 1 ]; then
         _dotfiles_id="%(!.%F{red}%n%f.%n):"
+      else
+        _dotfiles_id=""
       fi
       # sigil green on success, red on failure (%(?..) reads the last exit status).
       PS1="$_dotfiles_id"'%F{blue}%~%f%F{yellow}$(__dotfiles_git_ps1 " (%s)")%f%(?.%F{green}.%F{red})%#%f '
     else
-      [ "$_dotfiles_show_host" = 1 ] && _dotfiles_id='%n@%m:' || _dotfiles_id='%n:'
+      if [ "$_dotfiles_show_host" = 1 ]; then _dotfiles_id='%n@%m:'
+      elif [ "$_dotfiles_show_user" = 1 ]; then _dotfiles_id='%n:'
+      else _dotfiles_id=''; fi
       PS1="$_dotfiles_id"'%~$(__dotfiles_git_ps1 " (%s)")%# '
     fi
     unset _dotfiles_id
@@ -94,17 +100,21 @@ if [ "$XANEWOK_DOTFILES_PROMPT" = "1" ]; then
       [ "$_dotfiles_root" = 1 ] && _dotfiles_u='\[\033[01;31m\]\u\[\033[00m\]' || _dotfiles_u='\u'
       if [ "$_dotfiles_show_host" = 1 ]; then
         _dotfiles_id="${_dotfiles_u}@\[\033[38;5;\${XANEWOK_HOST_COLOR:-$_dotfiles_host_color}m\]\h\[\033[00m\]:"
-      else
+      elif [ "$_dotfiles_show_user" = 1 ]; then
         _dotfiles_id="${_dotfiles_u}:"
+      else
+        _dotfiles_id=""
       fi
       # sigil green on success, red on failure (reads the stashed __dotfiles_ec).
       PS1="${_dotfiles_title}${_dotfiles_id}"'\[\033[01;34m\]\w\[\033[00m\]\[\033[01;33m\]$(__dotfiles_git_ps1 " (%s)")\[\033[00m\]\[\033[$([ "${__dotfiles_ec:-0}" = 0 ] && echo 32 || echo 31)m\]\$\[\033[00m\] '
     else
-      [ "$_dotfiles_show_host" = 1 ] && _dotfiles_id='\u@\h:' || _dotfiles_id='\u:'
+      if [ "$_dotfiles_show_host" = 1 ]; then _dotfiles_id='\u@\h:'
+      elif [ "$_dotfiles_show_user" = 1 ]; then _dotfiles_id='\u:'
+      else _dotfiles_id=''; fi
       PS1="${_dotfiles_title}${_dotfiles_id}"'\w$(__dotfiles_git_ps1 " (%s)")\$ '
     fi
     unset _dotfiles_title _dotfiles_u _dotfiles_id
   fi
 
-  unset _dotfiles_color _dotfiles_host_color _dotfiles_show_host _dotfiles_root
+  unset _dotfiles_color _dotfiles_host_color _dotfiles_show_host _dotfiles_show_user _dotfiles_root
 fi
