@@ -11,4 +11,5 @@ ripgrep
 fd-find
 fzf
 bat
+git-delta
 jq
