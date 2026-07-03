@@ -5,4 +5,5 @@ brew "git-gui"
 cask "ghostty", args: { adopt: true }
 cask "visual-studio-code", args: { adopt: true }
 cask "1password", args: { adopt: true }
+cask "secretive", args: { adopt: true }   # SSH keys in the Secure Enclave (Touch ID); wire IdentityAgent yourself
 cask "font-fira-code", args: { adopt: true }
