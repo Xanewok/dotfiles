@@ -4,7 +4,9 @@
 # Note: only covers brew runs from shells that sourced this fragment.
 export HOMEBREW_NO_ANALYTICS=1
 
-# Solarized syntax highlighting for bat, to match the Ghostty Solarized theme. Fixed
-# dark rather than auto: bat's light/dark auto-detect needs 0.25+, which some apt bats
-# lack, so a fixed theme stays robust across versions.
-export BAT_THEME="Solarized (dark)"
+# bat follows the terminal's light/dark: `auto` detects the background via OSC 11 on each
+# run and picks one of the two themes below (matching the Ghostty Solarized palette).
+# Needs bat >= 0.26, which we pin via mise (apt/brew ship older).
+export BAT_THEME="auto"
+export BAT_THEME_DARK="Solarized (dark)"
+export BAT_THEME_LIGHT="Solarized (light)"

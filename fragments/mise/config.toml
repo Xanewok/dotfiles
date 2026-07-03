@@ -6,6 +6,9 @@ neovim = "0.11"
 # Fleet baseline node (current LTS). A per-project .node-version overrides it
 # (idiomatic_version_file_enable_tools below); replaces nodenv as node's owner.
 node = "22"
+# bat: apt/brew ship stale versions (Ubuntu is on 0.24); 0.26+ adds OSC-11 light/dark
+# auto-theme (see BAT_THEME/BAT_THEME_DARK/LIGHT in fragments/shell/env.sh).
+bat = "0.26"
 
 [settings]
 # Honor .node-version files (nodenv-style) for per-project node selection.
