@@ -35,7 +35,8 @@ if [ "$XANEWOK_DOTFILES_PROMPT" = "1" ]; then
   [ "$(id -u 2>/dev/null)" = 0 ] && _dotfiles_root=1
   _dotfiles_show_host=0
   [ -n "${SSH_CONNECTION:-}${SSH_CLIENT:-}${SSH_TTY:-}" ] && _dotfiles_show_host=1
-  _dotfiles_show_user="$_dotfiles_show_host"
+  _dotfiles_show_user=0
+  [ "$_dotfiles_show_host" = 1 ] && _dotfiles_show_user=1
   [ "$_dotfiles_root" = 1 ] && _dotfiles_show_user=1
   _dotfiles_login="$(logname 2>/dev/null || true)"
   [ -n "$_dotfiles_login" ] && [ "$_dotfiles_login" != "$(id -un 2>/dev/null)" ] && _dotfiles_show_user=1
@@ -44,7 +45,8 @@ if [ "$XANEWOK_DOTFILES_PROMPT" = "1" ]; then
   # Per-host hue: hash the short hostname to a 256-palette color that inherits the
   # terminal theme, skipping red/green (exit status), yellow (git), blue (path).
   # Only ~4 safe hues, so collisions happen — pin one with XANEWOK_HOST_COLOR (a
-  # color index) in local.sh, read at render time. A missing cksum or broken PATH
+  # color index) in local.sh (the escaped `$` in the PS1 defers that lookup to render
+  # time, so a later-sourced local.sh still wins). A missing cksum or broken PATH
   # degrades to one fixed color rather than erroring the prompt (an empty `%` operand
   # is a syntax error, not 0). Parens: the body is a subshell, so host/sum stay scoped.
   _dotfiles_pick_host_color() (
