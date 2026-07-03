@@ -10,4 +10,5 @@ vim
 ripgrep
 fd-find
 fzf
+bat
 jq
