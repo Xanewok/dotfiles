@@ -69,7 +69,8 @@ fi
   baseline. A pre-set `ANDROID_HOME` or existing toolchain manager is left alone.
 - `~/.ssh/config` is the one security-sensitive target: it gets only an `Include` of a
   fragment gated to macOS's Secure Enclave key provider (inert on Linux and pre-Tahoe
-  macOS). Your keys and the rest of your ssh config are never touched.
+  macOS). Your keys and the rest of your ssh config are never touched. Setup, assumptions,
+  and gotchas: [`docs/ssh-secure-enclave.md`](docs/ssh-secure-enclave.md).
 - `~/.config/xanewok-local/shell/local.sh` is an untracked per-machine overlay, sourced
   last; host quirks and machine secrets go there.
 
