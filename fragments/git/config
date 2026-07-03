@@ -11,7 +11,7 @@
 	ui = auto
 
 # delta: syntax-highlighted, navigable diffs. The binary is `delta` on both brew and
-# Debian's git-delta package. No theme set here yet, so it uses delta's default.
+# Debian's git-delta package. Solarized (dark) syntax theme, to match the terminal.
 [core]
 	pager = delta
 [interactive]
@@ -19,3 +19,4 @@
 [delta]
 	navigate = true
 	line-numbers = true
+	syntax-theme = Solarized (dark)

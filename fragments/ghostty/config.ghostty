@@ -1,4 +1,4 @@
-theme = dark:Catppuccin Frappe,light:Catppuccin Latte
+theme = dark:Solarized Dark,light:Solarized Light
 font-family = Fira Code
 # Breathing room so the prompt/output don't hug the window edges.
 window-padding-x = 10
