@@ -1,4 +1,4 @@
-theme = dark:Builtin Solarized Dark,light:Builtin Solarized Light
+theme = dark:iTerm2 Solarized Dark,light:iTerm2 Solarized Light
 font-family = Fira Code
 # Breathing room so the prompt/output don't hug the window edges.
 window-padding-x = 10
