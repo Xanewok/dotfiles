@@ -26,11 +26,40 @@ if [ "$XANEWOK_DOTFILES_PROMPT" = "1" ]; then
     fi
   fi
 
-  # One scheme on both shells: green user@host, blue path, yellow git branch.
+  # The username is always shown as a small stable anchor; the "@host" is added only
+  # when it carries information: over SSH, as root, or after su/sudo into an account
+  # that isn't your login (the Starship/Spaceship rule). Locally as yourself the host
+  # is noise you already know, so it's dropped and the prompt is just user:path.
+  _dotfiles_root=0
+  [ "$(id -u 2>/dev/null)" = 0 ] && _dotfiles_root=1
+  _dotfiles_show_host=0
+  [ -n "${SSH_CONNECTION:-}${SSH_CLIENT:-}${SSH_TTY:-}" ] && _dotfiles_show_host=1
+  [ "$_dotfiles_root" = 1 ] && _dotfiles_show_host=1
+  _dotfiles_login="$(logname 2>/dev/null || true)"
+  [ -n "$_dotfiles_login" ] && [ "$_dotfiles_login" != "$(id -un 2>/dev/null)" ] && _dotfiles_show_host=1
+  unset _dotfiles_login
+
+  # Per-host hue: hash the short hostname to a 256-palette color that inherits the
+  # terminal theme, skipping red/green (exit status), yellow (git), blue (path).
+  # Only ~4 safe hues, so collisions happen — pin one with XANEWOK_HOST_COLOR (a
+  # color index) in local.sh, read at render time. A missing cksum or broken PATH
+  # degrades to one fixed color rather than erroring the prompt (an empty `%` operand
+  # is a syntax error, not 0). Parens: the body is a subshell, so host/sum stay scoped.
+  _dotfiles_pick_host_color() (
+    host="${HOSTNAME:-${HOST:-$(hostname 2>/dev/null)}}"
+    sum=$( { printf %s "${host%%.*}" | cksum | cut -d' ' -f1; } 2>/dev/null )
+    case "$sum" in
+      ''|*[!0-9]*) echo 6 ;;
+      *) case $((sum % 4)) in 0) echo 5 ;; 1) echo 6 ;; 2) echo 13 ;; 3) echo 14 ;; esac ;;
+    esac
+  )
+  _dotfiles_host_color="$(_dotfiles_pick_host_color)"
+  unset -f _dotfiles_pick_host_color
+
   if [ -n "${ZSH_VERSION:-}" ]; then
     setopt PROMPT_SUBST 2>/dev/null || true
-    # Reflect user@host:dir in the terminal title, as the bash branch does.
-    # add-zsh-hook composes with other precmd users (e.g. Apple's /etc/zshrc).
+    # Reflect user@host:dir in the terminal title. add-zsh-hook composes with other
+    # precmd users (e.g. Apple's /etc/zshrc).
     case "${TERM:-}" in
       xterm*|rxvt*)
         _dotfiles_set_title() { print -Pn '\e]0;%n@%m: %~\a'; }
@@ -38,23 +67,44 @@ if [ "$XANEWOK_DOTFILES_PROMPT" = "1" ]; then
         ;;
     esac
     if [ "$_dotfiles_color" = 1 ]; then
-      PS1='%F{green}%n@%m%f:%F{blue}%~%f%F{yellow}$(__dotfiles_git_ps1 " (%s)")%f%# '
+      # username always (root name in red); @host only when informative, in its hue.
+      if [ "$_dotfiles_show_host" = 1 ]; then
+        _dotfiles_id="%(!.%F{red}%n%f.%n)@%F{\${XANEWOK_HOST_COLOR:-$_dotfiles_host_color}}%m%f:"
+      else
+        _dotfiles_id="%(!.%F{red}%n%f.%n):"
+      fi
+      # sigil green on success, red on failure (%(?..) reads the last exit status).
+      PS1="$_dotfiles_id"'%F{blue}%~%f%F{yellow}$(__dotfiles_git_ps1 " (%s)")%f%(?.%F{green}.%F{red})%#%f '
     else
-      PS1='%n@%m:%~$(__dotfiles_git_ps1 " (%s)")%# '
+      [ "$_dotfiles_show_host" = 1 ] && _dotfiles_id='%n@%m:' || _dotfiles_id='%n:'
+      PS1="$_dotfiles_id"'%~$(__dotfiles_git_ps1 " (%s)")%# '
     fi
+    unset _dotfiles_id
   elif [ -n "${BASH_VERSION:-}" ]; then
-    # Reflect user@host:dir in the terminal title on xterm-alikes (as stock Debian does).
+    # bash has no exit-status prompt escape: stash $? first each prompt (re-source-safe).
+    case ";${PROMPT_COMMAND-};" in
+      *"__dotfiles_ec="*) ;;
+      *) PROMPT_COMMAND="__dotfiles_ec=\$?${PROMPT_COMMAND:+; $PROMPT_COMMAND}" ;;
+    esac
     case "${TERM:-}" in
       xterm*|rxvt*) _dotfiles_title='\[\e]0;\u@\h: \w\a\]' ;;
       *) _dotfiles_title='' ;;
     esac
     if [ "$_dotfiles_color" = 1 ]; then
-      PS1="${_dotfiles_title}"'\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[01;33m\]$(__dotfiles_git_ps1 " (%s)")\[\033[00m\]\$ '
+      [ "$_dotfiles_root" = 1 ] && _dotfiles_u='\[\033[01;31m\]\u\[\033[00m\]' || _dotfiles_u='\u'
+      if [ "$_dotfiles_show_host" = 1 ]; then
+        _dotfiles_id="${_dotfiles_u}@\[\033[38;5;\${XANEWOK_HOST_COLOR:-$_dotfiles_host_color}m\]\h\[\033[00m\]:"
+      else
+        _dotfiles_id="${_dotfiles_u}:"
+      fi
+      # sigil green on success, red on failure (reads the stashed __dotfiles_ec).
+      PS1="${_dotfiles_title}${_dotfiles_id}"'\[\033[01;34m\]\w\[\033[00m\]\[\033[01;33m\]$(__dotfiles_git_ps1 " (%s)")\[\033[00m\]\[\033[$([ "${__dotfiles_ec:-0}" = 0 ] && echo 32 || echo 31)m\]\$\[\033[00m\] '
     else
-      PS1="${_dotfiles_title}"'\u@\h:\w$(__dotfiles_git_ps1 " (%s)")\$ '
+      [ "$_dotfiles_show_host" = 1 ] && _dotfiles_id='\u@\h:' || _dotfiles_id='\u:'
+      PS1="${_dotfiles_title}${_dotfiles_id}"'\w$(__dotfiles_git_ps1 " (%s)")\$ '
     fi
-    unset _dotfiles_title
+    unset _dotfiles_title _dotfiles_u _dotfiles_id
   fi
 
-  unset _dotfiles_color
+  unset _dotfiles_color _dotfiles_host_color _dotfiles_show_host _dotfiles_root
 fi
