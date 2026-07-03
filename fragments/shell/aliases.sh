@@ -1,5 +1,11 @@
 # shellcheck shell=sh
 
+# Treat `#` as a comment interactively so pasting a commented command doesn't error.
+# zsh has this off by default; bash's equivalent (interactive_comments) is already on.
+if [ -n "${ZSH_VERSION:-}" ]; then
+  setopt INTERACTIVE_COMMENTS
+fi
+
 # Colorize ls by file type — GNU ls uses --color, BSD ls (macOS) uses CLICOLOR.
 if ls --version >/dev/null 2>&1; then
   alias ls='ls --color=auto'
