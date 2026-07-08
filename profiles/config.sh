@@ -22,6 +22,16 @@ ensure_guarded_block "$HOME/.bashrc" "xanewok dotfiles" "#" "$shell_block"
 # PATH prepends; .zprofile runs after it, so they stick.)
 ensure_guarded_block "$HOME/.zprofile" "xanewok dotfiles" "#" "$shell_block"
 
+# Non-login, non-interactive zsh (`ssh host "cmd"`, rsync, git hooks, CI) sources ONLY
+# .zshenv — so without this it gets no toolchain. Safe to prepend PATH here *because*
+# it's guarded to NON-login shells, which never run /etc/zprofile→path_helper: the very
+# demotion that forces login shells onto .zprofile (above) can't happen on this path.
+# Login shells take the false branch and keep getting PATH from .zprofile unchanged.
+zshenv_block='if [[ ! -o login ]] && [ -f "$HOME/.config/xanewok-dotfiles/fragments/shell/loader.sh" ]; then
+  . "$HOME/.config/xanewok-dotfiles/fragments/shell/loader.sh"
+fi'
+ensure_guarded_block "$HOME/.zshenv" "xanewok dotfiles" "#" "$zshenv_block"
+
 # bash/sh read only the FIRST of these for a login shell — target whichever is live,
 # and never CREATE .bash_profile (it would shadow an existing .profile).
 bash_login="$HOME/.profile"
