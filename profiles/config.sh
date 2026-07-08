@@ -107,4 +107,36 @@ if [ -f "$DOTFILES_ROOT/fragments/mise/config.toml" ]; then
   [ -e "$HOME/.config/mise/config.toml" ] || touch "$HOME/.config/mise/config.toml"
 fi
 
+# Claude Code statusLine. settings.json is JSON, so guarded_block (which appends comment-delimited text)
+# can't wire it — jq-merge just the .statusLine key instead: every other setting is preserved, invalid JSON
+# is left untouched (never clobber), and a jq failure writes nothing. The meters under claude-statusline/cc
+# are vendored (self-contained), so the line works wherever node is present. Needs jq (already required by
+# the statusline itself); absent jq ⇒ skip, and the user wires settings.json by hand.
+statusline_bin="$HOME/.config/xanewok-dotfiles/resources/claude-statusline/statusline-cache.sh"
+if has jq && [ -f "$statusline_bin" ]; then
+  log "wiring Claude Code statusLine"
+  chmod +x "$statusline_bin" 2>/dev/null || true
+  claude_settings="$HOME/.claude/settings.json"
+  mkdir -p "$HOME/.claude"
+  current='{}'
+  if [ -f "$claude_settings" ]; then
+    if jq -e . "$claude_settings" >/dev/null 2>&1; then
+      current="$(cat "$claude_settings")"
+    else
+      warn "~/.claude/settings.json is not valid JSON — leaving statusLine unwired"
+      current=''
+    fi
+  fi
+  if [ -n "$current" ]; then
+    tmp="$(mktemp)"
+    if printf '%s' "$current" | jq --arg cmd "$statusline_bin" \
+        '.statusLine = {type: "command", command: $cmd, refreshInterval: 10}' > "$tmp"; then
+      mv "$tmp" "$claude_settings"
+    else
+      warn "jq failed to merge statusLine — leaving ~/.claude/settings.json untouched"
+      rm -f "$tmp"
+    fi
+  fi
+fi
+
 log "config profile complete"

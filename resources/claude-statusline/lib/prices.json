@@ -1,0 +1,16 @@
+{
+  "_comment": "USD per 1,000,000 tokens (input/output). Edit freely. Lookup in usage.mjs: exact model id first, then longest matching key-as-prefix (e.g. 'claude-opus-4' matches 'claude-opus-4-8'). Unknown model -> cost_usd stays null, never fabricated. Claude prices per platform.claude.com/docs/en/pricing (cached 2026-06-24); codex/OpenAI model prices are NOT populated below (no verified source at hand) -- add rows here if/when known.",
+  "claude-fable-5":    { "input": 10.00, "output": 50.00 },
+  "claude-mythos-5":   { "input": 10.00, "output": 50.00 },
+  "claude-opus-4-8":   { "input": 5.00,  "output": 25.00 },
+  "claude-opus-4-7":   { "input": 5.00,  "output": 25.00 },
+  "claude-opus-4-6":   { "input": 5.00,  "output": 25.00 },
+  "claude-opus-4-5":   { "input": 5.00,  "output": 25.00 },
+  "claude-opus-4-1":   { "input": 5.00,  "output": 25.00 },
+  "claude-opus-4-0":   { "input": 5.00,  "output": 25.00 },
+  "claude-sonnet-5":   { "input": 3.00,  "output": 15.00 },
+  "claude-sonnet-4-6": { "input": 3.00,  "output": 15.00 },
+  "claude-sonnet-4-5": { "input": 3.00,  "output": 15.00 },
+  "claude-sonnet-4-0": { "input": 3.00,  "output": 15.00 },
+  "claude-haiku-4-5":  { "input": 1.00,  "output": 5.00 }
+}
