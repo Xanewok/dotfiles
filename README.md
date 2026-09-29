@@ -74,6 +74,20 @@ fi
 - `~/.config/xanewok-local/shell/local.sh` is an untracked per-machine overlay, sourced
   last; host quirks and machine secrets go there.
 
+## tmux sessions that survive a reboot (opt-in, Linux)
+
+`resources/tmux-sessions/tmux-sessions save` records every tmux pane (session, window,
+dir, and the Claude Code session running in it). `restore` recreates the missing sessions,
+panes tiled, and runs `claude --resume <id>` in them. Sessions named in
+`~/.config/xanewok-local/tmux/sessions.conf` (`name dir` per line) always exist, at least
+as one window. Enable per machine with `crontab -e`; `SHELL` matters because tmux takes
+its `default-shell` from it, and cron's is `/bin/sh`:
+
+```
+*/5 * * * * ~/.config/xanewok-dotfiles/resources/tmux-sessions/tmux-sessions save
+@reboot SHELL=/bin/bash ~/.config/xanewok-dotfiles/resources/tmux-sessions/tmux-sessions restore
+```
+
 ## Trust boundaries
 
 - Homebrew's installer is offered interactively with the command shown, never run silently.

@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# Save and restore tmux sessions, resuming the Claude Code session in each pane.
+#   save     snapshot every pane: session, window, dir, Claude session id (run from cron)
+#   restore  recreate the sessions missing from the server, panes tiled; then make sure
+#            each session in sessions.conf ("name dir" per line) exists
+set -eu
+
+CONF=${XDG_CONFIG_HOME:-$HOME/.config}/xanewok-local/tmux/sessions.conf
+SNAP=${XDG_STATE_HOME:-$HOME/.local/state}/tmux-sessions/snapshot
+
+claude_session() {
+  local pid
+  for pid in "$1" $(pgrep -P "$1"); do
+    # A crash leaves the file behind; after a reboot its pid can be another program.
+    [ -f ~/.claude/sessions/"$pid".json ] || continue
+    case $(ps -p "$pid" -o comm=) in *claude) ;; *) continue ;; esac
+    sed -n 's/.*"sessionId":"\([^"]*\)".*/\1/p' ~/.claude/sessions/"$pid".json
+    return
+  done
+}
+
+save() {
+  local panes s w dir pid
+  # Not tabs: tmux turns them into _ without a UTF-8 locale, as under cron. dir is last,
+  # so it may contain |.
+  panes=$(tmux list-panes -a -F '#{session_name}|#{window_index}|#{pane_pid}|#{pane_current_path}' 2>/dev/null) ||
+    return 0 # no server: keep the snapshot for restore
+  mkdir -p "${SNAP%/*}"
+  echo "$panes" | while IFS='|' read -r s w pid dir; do
+    printf '%s|%s|%s|%s\n' "$s" "$w" "$(claude_session "$pid")" "$dir"
+  done >"$SNAP.tmp"
+  mv "$SNAP.tmp" "$SNAP"
+}
+
+restore() {
+  local existing s w dir id last= pane= name
+  existing=$(tmux list-sessions -F '#{session_name}' 2>/dev/null || true)
+  if [ -f "$SNAP" ]; then
+    cp "$SNAP" "$SNAP.restored" # save overwrites the snapshot, even after a failed restore
+    while IFS='|' read -r s w id dir <&3; do
+      if echo "$existing" | grep -qxF "$s"; then continue; fi
+      if ! tmux has-session -t "=$s" 2>/dev/null; then
+        pane=$(tmux new-session -d -P -F '#{pane_id}' -s "$s" -c "$dir")
+      elif [ "$last" != "$s|$w" ]; then
+        pane=$(tmux new-window -d -P -F '#{pane_id}' -t "=$s:" -c "$dir")
+      else
+        pane=$(tmux split-window -d -P -F '#{pane_id}' -t "$pane" -c "$dir")
+        tmux select-layout -t "$pane" tiled
+      fi
+      last="$s|$w"
+      [ -z "$id" ] || tmux send-keys -t "$pane" "claude --resume $id" Enter
+    done 3<"$SNAP"
+  fi
+  [ -f "$CONF" ] || return 0
+  while read -r name dir <&3; do
+    case $name in '' | \#*) continue ;; esac
+    case $dir in "~" | "~/"*) dir=$HOME${dir#"~"} ;; esac
+    tmux has-session -t "=$name" 2>/dev/null || tmux new-session -d -s "$name" -c "$dir"
+  done 3<"$CONF"
+}
+
+case ${1:-} in
+save | restore) "$1" ;;
+*)
+  echo "usage: ${0##*/} save|restore" >&2
+  exit 2
+  ;;
+esac
