@@ -10,11 +10,11 @@ SNAP=${XDG_STATE_HOME:-$HOME/.local/state}/tmux-sessions/snapshot
 
 claude_session() {
   local pid
-  for pid in "$1" $(pgrep -P "$1"); do
+  for pid in $(ps -o tpgid= -p "$1") "$1" $(pgrep -P "$1"); do
     # A crash leaves the file behind; after a reboot its pid can be another program.
     [ -f ~/.claude/sessions/"$pid".json ] || continue
     case $(ps -p "$pid" -o comm=) in *claude) ;; *) continue ;; esac
-    sed -n 's/.*"sessionId":"\([^"]*\)".*/\1/p' ~/.claude/sessions/"$pid".json
+    jq -r '.sessionId | strings' ~/.claude/sessions/"$pid".json
     return
   done
 }
