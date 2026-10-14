@@ -20,6 +20,8 @@ claude_session() {
 }
 
 save() {
+  # Without jq every id would be empty and overwrite the last good snapshot.
+  command -v jq >/dev/null || { echo "tmux-sessions: jq not found" >&2; return 1; }
   local panes s w dir pid
   # Not tabs: tmux turns them into _ without a UTF-8 locale, as under cron. dir is last,
   # so it may contain |.
