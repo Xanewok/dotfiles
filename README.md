@@ -97,7 +97,7 @@ Machine-specific env for the panes (e.g. `SSH_AUTH_SOCK` for a gpg-agent) goes i
 `systemctl --user edit tmux-sessions-restore`. The user manager gains desktop variables only
 after a graphical login, so do not rely on them at boot.
 
-Uninstall (stopping the units never kills the tmux server):
+`./install.sh remove` disables the units. By hand (stopping them never kills the tmux server):
 
 ```sh
 systemctl --user disable --now tmux-sessions-save.timer tmux-sessions-save.service tmux-sessions-restore.service
