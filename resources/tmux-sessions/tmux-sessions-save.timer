@@ -1,0 +1,10 @@
+[Unit]
+Description=Snapshot tmux panes every 5 minutes
+
+[Timer]
+# The first run after boot waits, so it never snapshots the half-restored server.
+OnBootSec=5min
+OnUnitActiveSec=5min
+
+[Install]
+WantedBy=timers.target

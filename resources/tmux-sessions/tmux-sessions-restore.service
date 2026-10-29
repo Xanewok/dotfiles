@@ -1,7 +1,7 @@
 # Under the user manager (at boot with linger) the tmux server and every pane get the user session
 # env: XDG_RUNTIME_DIR and the session bus. Under cron they get neither.
 [Unit]
-Description=Restore tmux sessions and resume their Claude Code sessions
+Description=Restore saved tmux sessions and resume their Claude Code sessions
 
 [Service]
 Type=oneshot

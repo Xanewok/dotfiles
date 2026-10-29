@@ -1,0 +1,6 @@
+[Unit]
+Description=Snapshot tmux panes and their Claude Code sessions for tmux-sessions-restore
+
+[Service]
+Type=oneshot
+ExecStart=%h/.config/xanewok-dotfiles/resources/tmux-sessions/tmux-sessions save

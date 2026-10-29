@@ -80,20 +80,29 @@ fi
 dir, and the Claude Code session running in it). `restore` recreates the missing sessions,
 panes tiled, and runs `claude --resume <id>` in them. Sessions named in
 `~/.config/xanewok-local/tmux/sessions.conf` (`name dir` per line) always exist, at least
-as one window. Enable per machine: `save` from `crontab -e`, `restore` as a user service. With
-linger (`loginctl enable-linger`) it runs at boot without any login. Under cron the tmux server and
-its panes would get no `XDG_RUNTIME_DIR` or session bus.
+as one window.
 
-```
-*/5 * * * * ~/.config/xanewok-dotfiles/resources/tmux-sessions/tmux-sessions save
-```
+Two systemd user units run it: `tmux-sessions-restore.service` at boot and
+`tmux-sessions-save.timer` every 5 minutes. With linger (`loginctl enable-linger`) both run
+without any login, and the tmux server and its panes get the user session env
+(`XDG_RUNTIME_DIR`, the session bus), which a cron-started server lacks.
+
 ```sh
-systemctl --user enable ~/.config/xanewok-dotfiles/resources/tmux-sessions/tmux-sessions.service
+d=~/.config/xanewok-dotfiles/resources/tmux-sessions
+systemctl --user enable $d/tmux-sessions-restore.service $d/tmux-sessions-save.service
+systemctl --user enable --now $d/tmux-sessions-save.timer
 ```
 
 Machine-specific env for the panes (e.g. `SSH_AUTH_SOCK` for a gpg-agent) goes in a drop-in:
-`systemctl --user edit tmux-sessions`. The user manager's env gains desktop variables only after
-a graphical login, so do not rely on them at boot.
+`systemctl --user edit tmux-sessions-restore`. The user manager gains desktop variables only
+after a graphical login, so do not rely on them at boot.
+
+Uninstall (stopping the units never kills the tmux server):
+
+```sh
+systemctl --user disable --now tmux-sessions-save.timer tmux-sessions-save.service tmux-sessions-restore.service
+rm -r ~/.config/systemd/user/tmux-sessions-restore.service.d ~/.local/state/tmux-sessions
+```
 
 ## Trust boundaries
 
