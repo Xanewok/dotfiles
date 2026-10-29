@@ -1,0 +1,16 @@
+# Under the user manager (at boot with linger) the tmux server and every pane get the user session
+# env: XDG_RUNTIME_DIR and the session bus. Under cron they get neither.
+[Unit]
+Description=Restore tmux sessions and resume their Claude Code sessions
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# tmux takes default-shell from SHELL.
+Environment=SHELL=%s
+ExecStart=%h/.config/xanewok-dotfiles/resources/tmux-sessions/tmux-sessions restore
+# The tmux server forks into this unit's cgroup: stopping or restarting the unit must not kill the panes.
+KillMode=process
+
+[Install]
+WantedBy=default.target

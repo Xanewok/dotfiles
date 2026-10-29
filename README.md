@@ -80,13 +80,20 @@ fi
 dir, and the Claude Code session running in it). `restore` recreates the missing sessions,
 panes tiled, and runs `claude --resume <id>` in them. Sessions named in
 `~/.config/xanewok-local/tmux/sessions.conf` (`name dir` per line) always exist, at least
-as one window. Enable per machine with `crontab -e`; `SHELL` matters because tmux takes
-its `default-shell` from it, and cron's is `/bin/sh`:
+as one window. Enable per machine: `save` from `crontab -e`, `restore` as a user service. With
+linger (`loginctl enable-linger`) it runs at boot without any login. Under cron the tmux server and
+its panes would get no `XDG_RUNTIME_DIR` or session bus.
 
 ```
 */5 * * * * ~/.config/xanewok-dotfiles/resources/tmux-sessions/tmux-sessions save
-@reboot SHELL=/bin/bash ~/.config/xanewok-dotfiles/resources/tmux-sessions/tmux-sessions restore
 ```
+```sh
+systemctl --user enable ~/.config/xanewok-dotfiles/resources/tmux-sessions/tmux-sessions.service
+```
+
+Machine-specific env for the panes (e.g. `SSH_AUTH_SOCK` for a gpg-agent) goes in a drop-in:
+`systemctl --user edit tmux-sessions`. The user manager's env gains desktop variables only after
+a graphical login, so do not rely on them at boot.
 
 ## Trust boundaries
 
