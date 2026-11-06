@@ -10,3 +10,9 @@ export HOMEBREW_NO_ANALYTICS=1
 export BAT_THEME="auto"
 export BAT_THEME_DARK="Solarized (dark)"
 export BAT_THEME_LIGHT="Solarized (light)"
+
+# Rootless podman serves the Docker API for docker-compose and testcontainers when there is no docker
+# CLI; needs `systemctl --user enable --now podman.socket`.
+if ! command -v docker >/dev/null 2>&1 && [ -S "${XDG_RUNTIME_DIR:-/nonexistent}/podman/podman.sock" ]; then
+  export DOCKER_HOST="unix://$XDG_RUNTIME_DIR/podman/podman.sock"
+fi
