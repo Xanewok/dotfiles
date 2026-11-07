@@ -13,17 +13,21 @@ and jq-merges the `statusLine` command into `~/.claude/settings.json` (see `prof
 - **context** (`render_ctx`, pure bash) — window fill; colour green→red as it grows.
 - **cache warmth** (`render_cache`, pure bash) — 🔥 warm / ❄️ COLD / ⏳ working; TTL read from traffic.
 - **burn** (`cc/cost-meter.mjs`) — 🧠 main + 🤖 subagent effective (input-equiv) tokens since the last
-  compaction. Needs the pricer (`lib/usage.mjs` + `lib/prices.json`).
+  compaction, from fixed weights. Only the dollar view (`COST_METER_USD=1`) needs the pricer
+  (`lib/usage.mjs` + `lib/prices.json`).
 - **latency** (`cc/latency-meter.mjs`) — ⏱ mean first-response latency over the last 5 turns (upper
   bound on TTFT; see the file header). Standalone, no pricer.
 
 ## Source of truth & re-sync (the vendoring drift)
-These four files are **byte-identical copies** — maintain them in `.agents`, re-sync here:
+`latency-meter.mjs`, `usage.mjs` and `prices.json` are **byte-identical copies** — maintain them in
+`.agents`, re-sync here:
 ```
 AG=~/repos/bloosh-workspace/.agents/bin/driver
-cp "$AG/cc/cost-meter.mjs" "$AG/cc/latency-meter.mjs"  cc/
+cp "$AG/cc/latency-meter.mjs"                          cc/
 cp "$AG/lib/usage.mjs"     "$AG/lib/prices.json"       lib/
 ```
+`cost-meter.mjs` is canonical here since it became incremental (it reads only appended bytes, in chunks,
+because transcripts outgrow V8's maximum string length); do not overwrite it from `.agents`.
 `prices.json` is the one that rots: when Anthropic reprices, update it in `.agents` and re-run the
 copy above. `statusline-cache.sh` is NOT a copy — it's canonical here (meters resolved relative to its
 own dir, not the `.agents` path) — edit it in place.

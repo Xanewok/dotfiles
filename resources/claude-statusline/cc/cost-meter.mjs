@@ -16,10 +16,9 @@
 //   💸 $/turn — (USD mode only) cost to re-read the whole window once (window × 0.1 × base input).
 //   ⟳ compact — hint escalating with window fill (soon ≥50%, now ≥75%).
 //
-// Cheap on the hot render path via a sidecar cache (<projectDir>/.<sessionId>.cost-cache.json): the segment
-// boundary is found by scanning ONLY the bytes appended to the main transcript since the last tick (append-only
-// JSONL) and its byte offset is cached, so main burn re-reads only the segment TAIL (offset→EOF), never the
-// whole file after warmup; subagent files are re-priced only when their mtime+size changes.
+// Cheap on the hot render path via a sidecar cache (<projectDir>/.<sessionId>.cost-cache.json): per-file token
+// tallies and byte positions persist, so each tick parses only the bytes appended since the last one. The first
+// tick on a large session pays one chunked pass.
 //
 // A segment is a pure (input)=>string ('' => dropped); compose via cc/statusline.mjs. Not standalone-portable
 // like context-meter (depends on ../lib/usage.mjs + prices.json — deliberately, so pricing has one source).
@@ -29,8 +28,7 @@ import { fileURLToPath } from 'node:url';
 import { computeCost, priceFor } from '../lib/usage.mjs';
 
 const CACHE_READ_MULT = 0.1;
-const OVERLAP = 64 * 1024;   // re-scan this many bytes before the prior EOF, to catch a boundary that straddled it
-const PV = 3;                // pricing/format version — bump when cache shape or computeCost's tiers change
+const PV = 4;                // pricing/format version — bump when cache shape or computeCost's tiers change
 const USD = process.env.COST_METER_USD === '1';   // default tokens; dollars are notional on a subscription plan
 function kfmt(n) { return n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${Math.round(n / 1e3)}k` : `${n}`; }
 
@@ -47,84 +45,85 @@ function marginalPerTurn(input) {
 }
 
 // ── file helpers ─────────────────────────────────────────────────────────────
-function readRange(path, start, end) {
+function readBuf(path, start, end) {
   const len = end - start;
-  if (len <= 0) return '';
+  if (len <= 0) return Buffer.alloc(0);
   const fd = openSync(path, 'r');
-  try { const buf = Buffer.allocUnsafe(len); const n = readSync(fd, buf, 0, len, start); return buf.toString('utf8', 0, n); }
+  try { const buf = Buffer.allocUnsafe(len); const n = readSync(fd, buf, 0, len, start); return buf.subarray(0, n); }
   finally { closeSync(fd); }
-}
-// newest compact_boundary in a chunk → {ts, offset} (byte offset of the boundary line's start; base = the
-// chunk's absolute start offset). {ts:null, offset:0} if the chunk has none (⇒ segment = whole file so far).
-function scanLastBoundary(text, base) {
-  let ts = null, offset = 0, pos = 0;
-  for (const line of text.split('\n')) {
-    if (line && line.indexOf('compact_boundary') >= 0) {
-      let r; try { r = JSON.parse(line); } catch { r = null; }
-      if (r && r.type === 'system' && r.subtype === 'compact_boundary' && r.timestamp) {
-        ts = r.timestamp; offset = base + Buffer.byteLength(text.slice(0, pos), 'utf8');
-      }
-    }
-    pos += line.length + 1;   // +1 for the consumed '\n' (char index; converted to bytes above)
-  }
-  return { ts, offset };
 }
 
 // accumulate one usage record into a per-model bucket (assistant turn or subagent turn).
 function addUsage(byModel, model, u) {
   const cc = u.cache_creation || {};
-  const a = byModel.get(model) || { input: 0, output: 0, cache_read: 0, cache_creation: 0, cache_creation_1h: 0, cache_creation_5m: 0 };
+  const k = model || '';
+  const a = byModel[k] || { input: 0, output: 0, cache_read: 0, cache_creation: 0, cache_creation_1h: 0, cache_creation_5m: 0 };
   a.input += u.input_tokens || 0; a.output += u.output_tokens || 0;
   a.cache_read += u.cache_read_input_tokens || 0; a.cache_creation += u.cache_creation_input_tokens || 0;
   a.cache_creation_1h += cc.ephemeral_1h_input_tokens || 0; a.cache_creation_5m += cc.ephemeral_5m_input_tokens || 0;
-  byModel.set(model, a);
+  byModel[k] = a;
 }
 // price a per-model map → {eff, cost} (eff = cost-weighted input-equivalent tokens).
 function priceModels(byModel) {
   let eff = 0, cost = 0;
-  for (const [model, u] of byModel) {
+  for (const [k, u] of Object.entries(byModel)) {
+    const model = k || null;
     const c = computeCost(u, model).cost_usd; const p = priceFor(model);
     if (c != null) { cost += c; if (p) eff += (c / p.input) * 1e6; }
   }
   return { eff, cost };
 }
 
-// one subagent file → { cost, tokens, eff, firstTs } (deduped by message.id, priced per its own model).
-function priceSubagent(path) {
-  const seen = new Set();
-  const byModel = new Map();
-  let firstTs = null;
-  for (const line of readFileSync(path, 'utf8').split('\n')) {
-    if (!line) continue;
-    let r; try { r = JSON.parse(line); } catch { continue; }
-    if (!firstTs && r.timestamp) firstTs = r.timestamp;
-    if (r.type !== 'assistant') continue;
-    const u = r.message && r.message.usage, id = r.message && r.message.id;
-    if (!u || !id || seen.has(id)) continue;
-    seen.add(id);
-    addUsage(byModel, r.message.model || null, u);
+// Incremental usage tally over an append-only JSONL. Reads only bytes after `st.pos`, in CHUNK-sized buffers (a
+// transcript can exceed V8's maximum string length), and only whole lines, so a record still being written is
+// read on the next tick. Assistant records of one API response share message.id and repeat its usage; `st.ids`
+// keeps recent ids to count each response once. With `boundaries`, a compact_boundary record starts a new
+// segment: the tally resets and `st.since` takes the boundary's timestamp.
+const CHUNK = 8 * 1024 * 1024;
+const RECENT_IDS = 256;
+function newTally() { return { pos: 0, ids: [], byModel: {}, firstTs: null, since: null }; }
+function tally(path, st, size, boundaries) {
+  let changed = false;
+  while (st.pos < size) {
+    const buf = readBuf(path, st.pos, Math.min(size, st.pos + CHUNK));
+    const end = buf.lastIndexOf(0x0a);
+    if (end < 0) {
+      if (buf.length < CHUNK) break;            // a partial last line: wait for the rest
+      st.pos += buf.length; changed = true;     // one line longer than CHUNK: skip it
+      continue;
+    }
+    for (const line of buf.toString('utf8', 0, end).split('\n')) {
+      if (!line) continue;
+      if (!st.firstTs && line.indexOf('"timestamp"') >= 0) { try { st.firstTs = JSON.parse(line).timestamp || null; } catch { /* fragment */ } }
+      if (boundaries && line.indexOf('compact_boundary') >= 0) {
+        let r; try { r = JSON.parse(line); } catch { r = null; }
+        if (r && r.type === 'system' && r.subtype === 'compact_boundary') { st.byModel = {}; st.ids = []; st.since = r.timestamp || null; }
+        continue;
+      }
+      if (line.indexOf('"assistant"') < 0) continue;
+      let r; try { r = JSON.parse(line); } catch { continue; }
+      if (r.type !== 'assistant') continue;
+      const u = r.message && r.message.usage, id = r.message && r.message.id;
+      if (!u || !id || st.ids.includes(id)) continue;
+      st.ids.push(id); if (st.ids.length > RECENT_IDS) st.ids.shift();
+      addUsage(st.byModel, r.message.model || null, u);
+    }
+    st.pos += end + 1; changed = true;
   }
-  let tokens = 0;
-  for (const [, u] of byModel) tokens += u.input + u.output + u.cache_read + u.cache_creation;   // raw throughput
-  const { eff, cost } = priceModels(byModel);
-  return { cost, tokens, eff, firstTs };
+  return changed;
 }
-
-// current-segment MAIN burn: assistant turns from the boundary byte offset to EOF (deduped, priced per model).
-function mainSegmentCost(transcriptPath, offset, size) {
-  let text; try { text = readRange(transcriptPath, offset || 0, size); } catch { return null; }
-  if (!text) return null;
-  const seen = new Set(); const byModel = new Map();
-  for (const line of text.split('\n')) {
-    if (!line || line.indexOf('"assistant"') < 0) continue;
-    let r; try { r = JSON.parse(line); } catch { continue; }
-    if (r.type !== 'assistant') continue;
-    const u = r.message && r.message.usage, id = r.message && r.message.id;
-    if (!u || !id || seen.has(id)) continue;
-    seen.add(id);
-    addUsage(byModel, r.message.model || null, u);
+// Effective (input-equivalent) tokens with fixed weights, so the token view needs no price table:
+// cache reads 0.1x, 5-minute cache writes 1.25x, 1-hour writes 2x, output 5x.
+function effTokens(byModel) {
+  let n = 0;
+  for (const u of Object.values(byModel)) {
+    const w5 = u.cache_creation_5m, w1 = u.cache_creation_1h, wOther = Math.max(0, u.cache_creation - w5 - w1);
+    n += u.input + 0.1 * u.cache_read + 1.25 * (w5 + wOther) + 2 * w1 + 5 * u.output;
   }
-  return byModel.size ? priceModels(byModel) : null;
+  return n;
+}
+function rawTokens(byModel) {
+  let n = 0; for (const u of Object.values(byModel)) n += u.input + u.output + u.cache_read + u.cache_creation; return n;
 }
 
 // current-segment SUBAGENT burn: files whose first turn is at/after the segment start. Mutates `cache`
@@ -139,13 +138,13 @@ function subagentSegmentCost(transcriptPath, since, cache) {
   for (const f of files) {
     const p = join(subDir, f);
     let st; try { st = statSync(p); } catch { continue; }
-    const key = `${st.mtimeMs}:${st.size}`, ck = `sub:${f}`;
+    const ck = `sub:${f}`;
     let ent = cache[ck];
-    if (!ent || ent.key !== key || ent.v !== PV) {   // recompute on file change OR a stale cache version
-      const s = priceSubagent(p); ent = { v: PV, key, cost: s.cost, tokens: s.tokens, eff: s.eff, firstTs: s.firstTs }; dirty = true;
-    }
+    if (!ent || ent.v !== PV || st.size < ent.t.pos) { ent = { v: PV, t: newTally() }; dirty = true; }   // new, stale or truncated
+    if (tally(p, ent.t, st.size, false)) { ent.cost = USD ? priceModels(ent.t.byModel).cost : 0; ent.eff = effTokens(ent.t.byModel); ent.tokens = rawTokens(ent.t.byModel); dirty = true; }
     cache[ck] = ent;
-    if (!since || (ent.firstTs && ent.firstTs >= since)) { cost += ent.cost; tokens += ent.tokens; eff += ent.eff; count++; }
+    if (ent.tokens == null) continue;
+    if (!since || (ent.t.firstTs && ent.t.firstTs >= since)) { cost += ent.cost; tokens += ent.tokens; eff += ent.eff; count++; }
   }
   for (const k of Object.keys(cache)) if (k.startsWith('sub:') && !live.has(k)) { delete cache[k]; dirty = true; }   // prune vanished files
   return { sub: count ? { cost, tokens, eff, count } : null, dirty };
@@ -158,24 +157,15 @@ function segmentCost(transcriptPath) {
   let cache = {}; try { cache = JSON.parse(readFileSync(cachePath, 'utf8')); } catch { /* cold cache */ }
   let dirty = false;
 
-  // segment start: last compact_boundary {ts, byte offset}, tracked incrementally over the append-only file.
-  let since = null, offset = 0, size = 0;
-  try {
-    const st = statSync(transcriptPath); size = st.size;
-    const prev = (cache._main && typeof cache._main.size === 'number') ? cache._main : { size: 0, ts: null, offset: 0 };
-    let ts = prev.ts, off = prev.offset || 0;
-    if (st.size < prev.size) { const b = scanLastBoundary(readRange(transcriptPath, 0, st.size), 0); ts = b.ts; off = b.offset; dirty = true; }   // shrank/rotated ⇒ full rescan
-    else if (st.size > prev.size) {
-      const base = Math.max(0, prev.size - OVERLAP);
-      const b = scanLastBoundary(readRange(transcriptPath, base, st.size), base);
-      if (b.ts) { ts = b.ts; off = b.offset; }   // no boundary in the new bytes ⇒ keep the prior one
-      dirty = true;
-    }
-    if (!cache._main || cache._main.size !== st.size || cache._main.ts !== ts || cache._main.offset !== off) { cache._main = { size: st.size, ts, offset: off }; dirty = true; }
-    since = ts; offset = off;
-  } catch { /* unreadable ⇒ offset 0 ⇒ whole file counts as one segment */ }
-
-  const main = mainSegmentCost(transcriptPath, offset, size);
+  let size = 0;
+  try { size = statSync(transcriptPath).size; } catch { return { main: null, sub: null }; }
+  let mt = cache._mainTally;
+  if (!mt || mt.v !== PV || size < mt.t.pos) { mt = { v: PV, t: newTally() }; dirty = true; }   // new, stale or truncated
+  if (tally(transcriptPath, mt.t, size, true)) dirty = true;
+  cache._mainTally = mt; delete cache._main;
+  const since = mt.t.since;
+  const main = Object.keys(mt.t.byModel).length
+    ? { eff: effTokens(mt.t.byModel), cost: USD ? priceModels(mt.t.byModel).cost : 0 } : null;
   const { sub, dirty: subDirty } = subagentSegmentCost(transcriptPath, since, cache);
   if (dirty || subDirty) { try { writeFileSync(cachePath, JSON.stringify(cache)); } catch { /* read-only fs ⇒ recompute next tick */ } }
   return { main, sub };
