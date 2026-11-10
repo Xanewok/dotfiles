@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Save and restore tmux sessions, resuming the Claude Code session in each pane.
-#   save     snapshot every pane: session, window, dir, Claude session id (run from cron)
+#   save     snapshot every pane: session, window, dir, Claude session id (run by tmux-sessions-save.timer)
 #   restore  recreate the sessions missing from the server, panes tiled; then make sure
 #            each session in sessions.conf ("name dir" per line) exists
 set -eu
@@ -23,7 +23,7 @@ save() {
   # Without jq every id would be empty and overwrite the last good snapshot.
   command -v jq >/dev/null || { echo "tmux-sessions: jq not found" >&2; return 1; }
   local panes s w dir pid
-  # Not tabs: tmux turns them into _ without a UTF-8 locale, as under cron. dir is last,
+  # Not tabs: tmux turns them into _ without a UTF-8 locale. dir is last,
   # so it may contain |.
   panes=$(tmux list-panes -a -F '#{session_name}|#{window_index}|#{pane_pid}|#{pane_current_path}' 2>/dev/null) ||
     return 0 # no server: keep the snapshot for restore
